@@ -1,0 +1,171 @@
+{
+  "candidate_profile": {
+    "target_roles": [
+      "Cloud Administrator",
+      "AWS Cloud Support",
+      "Junior Cloud Engineer",
+      "Junior DevOps",
+      "Junior DevOps Engineer",
+      "DevOps Engineer",
+      "Infrastructure Engineer",
+      "Platform Engineer",
+      "Junior Site Reliability Engineer",
+      "Junior SRE",
+      "Systems Engineer",
+      "Cloud Support Engineer"
+    ],
+    "target_locations_primary": [
+      "Pune",
+      "Pune, Maharashtra",
+      "Pune, India"
+    ],
+    "target_locations_secondary": [
+      "Remote",
+      "India",
+      "Work from Home",
+      "Worldwide",
+      "Anywhere"
+    ],
+    "core_skills": [
+      "AWS",
+      "Linux",
+      "IAM",
+      "EC2",
+      "S3",
+      "networking",
+      "Docker",
+      "Kubernetes",
+      "Terraform",
+      "OpenTofu",
+      "Git",
+      "GitHub Actions",
+      "Jenkins",
+      "CI/CD",
+      "Prometheus",
+      "Grafana",
+      "Python",
+      "Bash",
+      "infrastructure automation"
+    ],
+    "experience_profile": {
+      "target_years_min": 0,
+      "target_years_max": 3,
+      "background_notes": "Operations and technical-support experience at Amazon; DevOps/infrastructure internship experience. Fresher/entry/junior level fit (0-3 years).",
+      "positive_keywords": [
+        "intern",
+        "internship",
+        "fresher",
+        "junior",
+        "jr",
+        "associate",
+        "entry level",
+        "trainee",
+        "graduate",
+        "0-1 year",
+        "0-2 years",
+        "1-2 years",
+        "1-3 years",
+        "0-3 years"
+      ],
+      "penalty_keywords": [
+        "senior",
+        "sr.",
+        "sr",
+        "lead",
+        "staff",
+        "principal",
+        "architect",
+        "director",
+        "manager",
+        "head of",
+        "4+ years",
+        "5+ years",
+        "6+ years",
+        "7+ years",
+        "8+ years",
+        "10+ years"
+      ]
+    }
+  },
+  "filters": {
+    "max_posting_age_days": 1,
+    "pune_or_remote_india_only": true,
+    "strict_verified_only": false,
+    "max_experience_years": 3,
+    "exclude_senior_roles": true
+  },
+  "sources_config": {
+    "greenhouse_public_boards": {
+      "enabled": true,
+      "company_boards": [
+        "gitlab",
+        "canonical",
+        "elastic",
+        "wikimedia",
+        "sumologic"
+      ]
+    },
+    "lever_public_boards": {
+      "enabled": true,
+      "company_boards": [
+        "palantir",
+        "spotify"
+      ]
+    },
+    "ashby_public_boards": {
+      "enabled": true,
+      "company_boards": [
+        "airbyte",
+        "vanta",
+        "ramp",
+        "linear",
+        "notion",
+        "cursor"
+      ]
+    },
+    "jobicy_api": {
+      "enabled": true
+    },
+    "we_work_remotely_rss": {
+      "enabled": true,
+      "url": "https://weworkremotely.com/categories/remote-devops-sysadmin-jobs.rss"
+    },
+    "remotive_api": {
+      "enabled": true,
+      "category": "devops"
+    },
+    "google_news_rss": {
+      "enabled": true,
+      "queries": [
+        "site:linkedin.com/jobs (\"DevOps Engineer\" OR \"Junior DevOps\") Pune",
+        "site:linkedin.com/jobs (\"DevOps\" OR \"Cloud Support\") \"Remote\" India",
+        "site:naukri.com (\"DevOps Engineer\" OR \"Cloud Engineer\") Pune",
+        "site:naukri.com (\"Junior DevOps\" OR \"DevOps Fresher\" OR \"DevOps Intern\")"
+      ]
+    }
+  },
+  "recruiter_discovery": {
+    "enable_job_posting_extractor": true,
+    "enable_public_hiring_posts": true,
+    "min_recruiter_score": 40.0,
+    "hiring_post_queries": [
+      "site:linkedin.com/posts (\"hiring\" OR \"looking for\") (\"DevOps\" OR \"Cloud\" OR \"AWS\") (\"Pune\" OR \"India\")",
+      "site:linkedin.com/posts (\"we are hiring\" OR \"open role\") (\"Junior DevOps\" OR \"Cloud Administrator\") Pune",
+      "site:linkedin.com/in (\"Technical Recruiter\" OR \"Talent Acquisition\") (\"DevOps\" OR \"AWS\") Pune",
+      "site:linkedin.com/in (\"Technical Recruiter\" OR \"Talent Acquisition\") \"DevOps\" \"Remote\" India",
+      "site:naukri.com/recruiters (\"DevOps\" OR \"Cloud\" OR \"Kubernetes\") Pune"
+    ]
+  },
+  "settings": {
+    "database_file": "jobs.db",
+    "export_csv_file": "devops_jobs_ranked.csv",
+    "export_leads_csv_file": "devops_jobs_unverified_leads.csv",
+    "export_recruiters_csv_file": "devops_recruiters.csv",
+    "search_links_md_file": "job_search_links.md",
+    "recruiter_search_links_md_file": "recruiter_search_links.md",
+    "min_export_score": 40,
+    "request_timeout_seconds": 12,
+    "request_delay_seconds": 1.0,
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+  }
+}

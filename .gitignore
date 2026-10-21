@@ -1,0 +1,6 @@
+/backup-before-recruiter-discovery/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env

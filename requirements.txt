@@ -1,0 +1,9 @@
+# DevOps Job Hunter - Dependencies
+#
+# Core System:
+# The core application runs 100% on the Python Standard Library
+# (sqlite3, urllib.request, xml.etree.ElementTree, json, csv, hashlib).
+# ZERO external packages are required to run discovery, scoring, database, or CSV export.
+#
+# Optional test runner (standard `python test_system.py` uses built-in unittest):
+pytest>=8.0.0
