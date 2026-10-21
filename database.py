@@ -12,6 +12,8 @@ import logging
 import os
 import re
 import sqlite3
+import socket
+import urllib.error
 import urllib.request
 from contextlib import contextmanager
 from datetime import datetime, timezone, timedelta
@@ -475,7 +477,9 @@ class JobDatabase:
 
                 is_pune = "pune" in loc_low or "pune" in raw_low
                 is_remote = "remote" in arr_low or "remote" in loc_low or "work from home" in raw_low or "anywhere" in loc_low or "worldwide" in loc_low
-                foreign_restricted = bool(FOREIGN_REMOTE_PATTERN.search(loc_low) or FOREIGN_REMOTE_PATTERN.search(raw_low))
+                has_foreign = bool(re.search(r"\b(united\s+states|usa|u\.s\.|canada|united\s+kingdom|uk|london|germany|poland|brazil|mexico|argentina|australia|singapore|ireland|california|san\s+francisco|san\s+jose|washington|seattle|new\s+york|texas|austin|chicago|bellevue)\b", loc_low))
+                has_india_global = bool(re.search(r"\b(india|pune|bangalore|bengaluru|hyderabad|worldwide|anywhere|global)\b", loc_low))
+                foreign_restricted = bool(FOREIGN_REMOTE_PATTERN.search(loc_low) or FOREIGN_REMOTE_PATTERN.search(raw_low) or (has_foreign and not has_india_global))
 
                 if not (is_pune or (is_remote and not foreign_restricted)):
                     continue
@@ -487,45 +491,117 @@ class JobDatabase:
 
         return filtered_jobs
 
-    def check_url_liveness(self, url: str, timeout: int = 5) -> str:
+    def check_url_liveness(self, url: str, timeout: int = 6) -> str:
         """
-        Conservative liveness check.
-        Never marks 403 or 429 as expired (anti-bot protections).
-        Only marks 404 or 410 as expired.
+        Comprehensive liveness check.
+        Checks HTTP status and inspects response body for closed/expired markers.
+        Never marks 403 or 429 as expired.
+        Returns:
+          - 'Active - verified'
+          - 'Likely active - not fully verifiable'
+          - 'Expired/closed'
+          - 'Blocked/login required'
+          - 'URL check failed'
+          - 'Unknown'
         """
         if not url or url.lower() in ["unknown", ""] or url.startswith("synthetic://"):
-            return "Unverified (No URL)"
+            return "Unknown (No direct URL)"
 
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-            "Accept": "*/*"
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9"
         }
+
+        CLOSED_MARKERS = [
+            "no longer accepting applications",
+            "job is closed",
+            "job has expired",
+            "position has been filled",
+            "job no longer available",
+            "posting has expired",
+            "job is inactive",
+            "this role has been filled",
+            "this listing has expired",
+            "the job you are looking for is no longer open"
+        ]
+
+        LOGIN_MARKERS = [
+            "sign in to view",
+            "login to view this job",
+            "join linkedin to view",
+            "authentication required"
+        ]
+
         try:
-            req = urllib.request.Request(url, headers=headers, method="HEAD")
+            req = urllib.request.Request(url, headers=headers, method="GET")
             with urllib.request.urlopen(req, timeout=timeout) as resp:
-                if resp.status in [200, 301, 302, 307, 308]:
-                    return "Active"
-                return f"Active ({resp.status})"
+                resolved_url = resp.url
+                status_code = resp.status
+                
+                # Check for redirect to generic homepage/search
+                if resolved_url != url:
+                    parsed = urlparse(resolved_url)
+                    path = parsed.path.rstrip("/")
+                    if path in ["", "/jobs", "/careers", "/search", "/en-us/careers"]:
+                        return "Expired/closed (Redirected to search/home)"
+
+                # Read preview chunk (up to 32KB)
+                chunk = resp.read(32768).decode("utf-8", errors="ignore").lower()
+
+                # Check body for closed phrases
+                for cm in CLOSED_MARKERS:
+                    if cm in chunk:
+                        return f"Expired/closed ({cm})"
+
+                # Check for login-gated page
+                for lm in LOGIN_MARKERS:
+                    if lm in chunk:
+                        return "Blocked/login required"
+
+                if status_code == 200:
+                    return "Active - verified"
+                elif status_code in [301, 302, 307, 308]:
+                    return "Likely active - not fully verifiable"
+                return f"Likely active (HTTP {status_code})"
+
         except urllib.error.HTTPError as e:
             if e.code in [404, 410]:
-                return f"Expired ({e.code})"
-            elif e.code in [403, 429]:
-                return f"Unverified (Anti-Bot / HTTP {e.code})"
-            elif e.code == 405:
-                # Method Not Allowed for HEAD; try GET with small read
-                try:
-                    req_get = urllib.request.Request(url, headers=headers, method="GET")
-                    with urllib.request.urlopen(req_get, timeout=timeout) as resp_get:
-                        return "Active"
-                except urllib.error.HTTPError as eg:
-                    if eg.code in [404, 410]:
-                        return f"Expired ({eg.code})"
-                    return f"Unverified (HTTP {eg.code})"
-                except Exception:
-                    return "Unverified (Timeout)"
-            return f"Unverified (HTTP {e.code})"
+                return f"Expired/closed (HTTP {e.code})"
+            elif e.code in [401, 403, 429]:
+                return f"Blocked/login required (HTTP {e.code})"
+            return f"URL check failed (HTTP {e.code})"
+        except (urllib.error.URLError, socket.timeout, TimeoutError, ConnectionResetError) as ex:
+            return f"URL check failed (Timeout / Connection Error)"
         except Exception as ex:
-            return "Unverified (Timeout / Connection Error)"
+            return f"URL check failed ({type(ex).__name__})"
+
+    def revalidate_stored_jobs(self, limit: int = 50) -> Dict[str, int]:
+        """Rechecks active status of stored jobs in SQLite and updates last_checked_date."""
+        now_iso = datetime.now(timezone.utc).isoformat()
+        results_count = {}
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, application_url, canonical_application_url
+                FROM jobs
+                WHERE status != 'Archived'
+                ORDER BY last_checked_date ASC, last_seen_date DESC
+                LIMIT ?
+            """, (limit,))
+            rows = cursor.fetchall()
+
+            for row in rows:
+                jid = row["id"]
+                url = row["canonical_application_url"] or row["application_url"]
+                liveness = self.check_url_liveness(url)
+                cursor.execute("""
+                    UPDATE jobs SET liveness_status = ?, last_checked_date = ? WHERE id = ?
+                """, (liveness, now_iso, jid))
+                results_count[liveness] = results_count.get(liveness, 0) + 1
+
+            conn.commit()
+        return results_count
 
     def update_job_status(self, job_id: int, status: str, notes: Optional[str] = None) -> bool:
         """Updates user workflow status ('New', 'Applied', 'Reviewed', 'Archived') and notes."""
@@ -564,6 +640,31 @@ class JobDatabase:
                 "status_breakdown": status_counts,
                 "date_confidence_breakdown": date_conf_counts
             }
+
+    def export_to_excel(
+        self,
+        filepath: Optional[str] = None,
+        output_dir: Optional[str] = None,
+        min_score: float = 0.0,
+        status_filter: Optional[str] = None,
+        max_age_days: Optional[float] = None,
+        pune_or_remote_only: bool = False,
+        strict_verified_only: bool = False,
+        limit: Optional[int] = None
+    ) -> Tuple[str, int, int]:
+        """Exports deduplicated jobs to an Excel (.xlsx) workbook using openpyxl."""
+        from excel_export import ExcelJobExporter
+        jobs = self.get_jobs(
+            status=status_filter,
+            min_score=min_score,
+            max_age_days=max_age_days,
+            pune_or_remote_only=pune_or_remote_only,
+            strict_verified_only=strict_verified_only,
+            limit=limit
+        )
+        exporter = ExcelJobExporter(output_dir=output_dir)
+        saved_path, count, dupes = exporter.export_jobs(jobs, output_filepath=filepath, deduplicate=True)
+        return str(saved_path), count, dupes
 
     def export_to_csv(
         self,

@@ -34,7 +34,12 @@ class OutreachMessageGenerator:
         if not full_name or full_name.lower() in ["unknown", "unverified"]:
             return "there"
         parts = full_name.strip().split()
-        return parts[0].title() if parts else "there"
+        if not parts:
+            return "there"
+        honorifics = {"dr", "dr.", "mr", "mr.", "mrs", "mrs.", "ms", "ms.", "prof", "prof."}
+        if parts[0].lower() in honorifics and len(parts) > 1:
+            return parts[1].title()
+        return parts[0].title()
 
     def generate_linkedin_connection_note(self, recruiter: Dict[str, Any]) -> str:
         """

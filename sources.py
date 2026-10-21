@@ -1,36 +1,46 @@
 """
-sources.py - Reliable, multi-source job discovery connectors.
+sources.py - Reliable, multi-source job discovery connectors with bounded timeouts.
 
 Integrates:
-1. Greenhouse Public Boards (GitLab, Canonical, Elastic, Wikimedia, Sumo Logic)
-2. Lever Public API (Palantir, Spotify, etc.) - Verified createdAt timestamps
-3. Ashby Public API (Airbyte, Vanta, Ramp, Linear, Notion, Cursor) - Verified publishedAt
-4. We Work Remotely RSS - Verified pubDate with strict DevOps keyword filtering
-5. Jobicy Remote Jobs API - Verified pubDate with country/geo filtering
-6. Google News RSS - Supplementary discovery (strictly marked Estimated Feed Indexed Date, no query leakage)
-7. Targeted Search Link Generator - Pre-filtered manual search URLs for LinkedIn, Naukri, Indeed, Glassdoor
+1. Greenhouse Public Boards (Druva, Zscaler, LogicMonitor, SolarWinds, Rubrik, GitLab, Canonical, Elastic, etc.)
+2. Lever Public API (Palantir, Spotify, Toptal, Sonatype)
+3. Ashby Public API (Snowflake, Airbyte, Vanta, Ramp, Linear, Notion, Cursor)
+4. Workday Public Career Endpoints (Salesforce, Mastercard)
+5. SmartRecruiters Public API (Colliers, etc.)
+6. We Work Remotely RSS (DevOps category with keyword validation)
+7. Jobicy Remote Jobs API (Verified pubDate with geo restrictions)
+8. Remotive Public API (Verified DevOps remote postings)
+9. Google News RSS (Supplementary discovery; strictly labeled Estimated Feed Indexed Date; no query leakage)
+10. Targeted Search Link Generator (Pre-filtered search URLs for LinkedIn, Naukri, Indeed, Glassdoor)
 
-Zero unauthorized scraping. Respects robots, access controls, rate limits, and timeouts.
+Zero unauthorized scraping. Respects robots, access controls, rate limits, and bounded timeouts.
 """
 
 import email.utils
 import html
+import http.client
 import json
 import logging
+import os
 import re
+import socket
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("devops_job_hunter.sources")
 
+# Set global socket default timeout to prevent OS-level hanging
+socket.setdefaulttimeout(10.0)
+
 DEVOPS_ROLE_KEYWORDS = [
     "devops", "cloud", "infrastructure", "sre", "platform", "kubernetes",
     "systems", "linux", "aws", "terraform", "reliability", "cloud support",
-    "cloud administrator", "site reliability"
+    "cloud administrator", "site reliability", "cloud operations", "automation"
 ]
 
 AGGREGATOR_PATTERNS = [
@@ -47,25 +57,99 @@ AGGREGATOR_PATTERNS = [
 ]
 
 
-class BaseSource:
-    """Abstract base class for all job sources."""
+class SafeHTTPClient:
+    """HTTP client with bounded connection, chunked read deadlines, and transient retry."""
 
-    def __init__(self, name: str, user_agent: str, timeout: int = 12):
+    @staticmethod
+    def fetch_url(
+        url: str,
+        method: str = "GET",
+        data: Optional[bytes] = None,
+        headers: Optional[Dict[str, str]] = None,
+        timeout: float = 8.0,
+        max_bytes: int = 5 * 1024 * 1024,
+        max_retries: int = 1
+    ) -> bytes:
+        default_headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+            "Accept": "application/json, application/rss+xml, application/xml, text/xml, text/html, */*",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+        if headers:
+            default_headers.update(headers)
+
+        req = urllib.request.Request(url, data=data, headers=default_headers, method=method)
+
+        attempts = 0
+        while attempts <= max_retries:
+            attempts += 1
+            t_start = time.monotonic()
+            try:
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    # Bounded chunked read with hard deadline
+                    chunks = []
+                    bytes_read = 0
+                    chunk_size = 8192
+
+                    while True:
+                        if time.monotonic() - t_start > timeout:
+                            raise TimeoutError(f"Read deadline ({timeout}s) exceeded for {url}")
+
+                        try:
+                            chunk = resp.read(chunk_size)
+                        except http.client.IncompleteRead as e:
+                            # Salvage partial response
+                            if e.partial:
+                                chunks.append(e.partial)
+                            break
+
+                        if not chunk:
+                            break
+
+                        chunks.append(chunk)
+                        bytes_read += len(chunk)
+
+                        if bytes_read > max_bytes:
+                            logger.warning(f"Response exceeded max_bytes ({max_bytes}) for {url}; truncating safely.")
+                            break
+
+                    return b"".join(chunks)
+
+            except urllib.error.HTTPError as e:
+                # Retry only transient server errors (502, 503, 504)
+                if e.code in [502, 503, 504] and attempts <= max_retries:
+                    time.sleep(1.0)
+                    continue
+                raise
+            except ConnectionResetError as e:
+                if attempts <= max_retries:
+                    time.sleep(1.0)
+                    continue
+                raise
+            except (urllib.error.URLError, socket.timeout, TimeoutError) as e:
+                raise
+
+
+class BaseSource:
+    """Abstract base class for job sources with time budgets."""
+
+    def __init__(self, name: str, user_agent: str, timeout: int = 8, time_budget: float = 35.0):
         self.name = name
         self.user_agent = user_agent
         self.timeout = timeout
+        self.time_budget = time_budget
         self.last_error: Optional[str] = None
         self.execution_time: float = 0.0
 
-    def fetch_url(self, url: str) -> bytes:
-        headers = {
-            "User-Agent": self.user_agent,
-            "Accept": "application/rss+xml, application/xml, application/json, text/xml, */*",
-            "Accept-Language": "en-US,en;q=0.9",
-        }
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-            return resp.read()
+    def fetch_url(self, url: str, method: str = "GET", data: Optional[bytes] = None, headers: Optional[Dict[str, str]] = None) -> bytes:
+        return SafeHTTPClient.fetch_url(
+            url=url,
+            method=method,
+            data=data,
+            headers=headers,
+            timeout=float(self.timeout),
+            max_retries=1
+        )
 
     def fetch_jobs(self) -> List[Dict[str, Any]]:
         raise NotImplementedError
@@ -74,17 +158,23 @@ class BaseSource:
 class GreenhousePublicJobSource(BaseSource):
     """Public career board connector for tech companies using Greenhouse."""
 
-    def __init__(self, company_boards: List[str], user_agent: str, timeout: int = 12):
-        super().__init__("GreenhousePublicBoards", user_agent, timeout)
+    def __init__(self, company_boards: List[str], user_agent: str, timeout: int = 8, time_budget: float = 35.0):
+        super().__init__("GreenhousePublicBoards", user_agent, timeout, time_budget)
         self.company_boards = company_boards
 
     def fetch_jobs(self) -> List[Dict[str, Any]]:
         start_t = time.time()
         jobs: List[Dict[str, Any]] = []
         errors: List[str] = []
+        seen_urls = set()
 
         for board in self.company_boards:
-            url = f"https://boards-api.greenhouse.io/v1/boards/{board}/jobs?content=true"
+            # Respect overall time budget
+            if time.time() - start_t > self.time_budget:
+                logger.warning(f"Greenhouse connector reached time budget ({self.time_budget}s). Finishing with {len(jobs)} jobs.")
+                break
+
+            url = f"https://boards-api.greenhouse.io/v1/boards/{board}/jobs"
             try:
                 content = self.fetch_url(url)
                 data = json.loads(content.decode("utf-8"))
@@ -124,21 +214,15 @@ class GreenhousePublicJobSource(BaseSource):
                 logger.warning(err)
 
         self.execution_time = time.time() - start_t
-        if errors and not jobs:
-            self.last_error = "; ".join(errors)
-        elif errors:
-            self.last_error = f"Partial success: {len(errors)} board errors"
-        else:
-            self.last_error = None
-
+        self.last_error = "; ".join(errors[:2]) if errors else None
         return jobs
 
 
 class LeverPublicJobSource(BaseSource):
     """Public REST connector for tech companies using Lever."""
 
-    def __init__(self, company_boards: List[str], user_agent: str, timeout: int = 12):
-        super().__init__("LeverPublicBoards", user_agent, timeout)
+    def __init__(self, company_boards: List[str], user_agent: str, timeout: int = 8, time_budget: float = 35.0):
+        super().__init__("LeverPublicBoards", user_agent, timeout, time_budget)
         self.company_boards = company_boards
 
     def fetch_jobs(self) -> List[Dict[str, Any]]:
@@ -147,6 +231,10 @@ class LeverPublicJobSource(BaseSource):
         errors: List[str] = []
 
         for company in self.company_boards:
+            if time.time() - start_t > self.time_budget:
+                logger.warning(f"Lever connector reached time budget ({self.time_budget}s). Finishing with {len(jobs)} jobs.")
+                break
+
             url = f"https://api.lever.co/v0/postings/{company}?mode=json"
             try:
                 content = self.fetch_url(url)
@@ -202,15 +290,15 @@ class LeverPublicJobSource(BaseSource):
                 logger.warning(err)
 
         self.execution_time = time.time() - start_t
-        self.last_error = "; ".join(errors) if errors else None
+        self.last_error = "; ".join(errors[:2]) if errors else None
         return jobs
 
 
 class AshbyPublicJobSource(BaseSource):
     """Public REST connector for tech companies using Ashby."""
 
-    def __init__(self, company_boards: List[str], user_agent: str, timeout: int = 12):
-        super().__init__("AshbyPublicBoards", user_agent, timeout)
+    def __init__(self, company_boards: List[str], user_agent: str, timeout: int = 8, time_budget: float = 35.0):
+        super().__init__("AshbyPublicBoards", user_agent, timeout, time_budget)
         self.company_boards = company_boards
 
     def fetch_jobs(self) -> List[Dict[str, Any]]:
@@ -219,6 +307,10 @@ class AshbyPublicJobSource(BaseSource):
         errors: List[str] = []
 
         for company in self.company_boards:
+            if time.time() - start_t > self.time_budget:
+                logger.warning(f"Ashby connector reached time budget ({self.time_budget}s). Finishing with {len(jobs)} jobs.")
+                break
+
             url = f"https://api.ashbyhq.com/posting-api/job-board/{company}"
             try:
                 content = self.fetch_url(url)
@@ -263,15 +355,174 @@ class AshbyPublicJobSource(BaseSource):
                 logger.warning(err)
 
         self.execution_time = time.time() - start_t
-        self.last_error = "; ".join(errors) if errors else None
+        self.last_error = "; ".join(errors[:2]) if errors else None
+        return jobs
+
+
+class WorkdayPublicJobSource(BaseSource):
+    """Public REST connector for employers using Workday CXS career endpoints."""
+
+    def __init__(self, tenant_configs: List[Dict[str, str]], user_agent: str, timeout: int = 8, time_budget: float = 35.0):
+        super().__init__("WorkdayPublicCXS", user_agent, timeout, time_budget)
+        self.tenant_configs = tenant_configs
+
+    def fetch_jobs(self) -> List[Dict[str, Any]]:
+        start_t = time.time()
+        jobs: List[Dict[str, Any]] = []
+        errors: List[str] = []
+        seen_urls = set()
+
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+
+        search_terms = ["cloud", "devops"]
+
+        for cfg in self.tenant_configs:
+            if time.time() - start_t > self.time_budget:
+                break
+
+            name = cfg.get("name", "Unknown")
+            tenant = cfg.get("tenant", "")
+            site = cfg.get("site", "")
+            endpoint_url = cfg.get("endpoint") or f"https://{tenant}.wd1.myworkdayjobs.com/wday/cxs/{tenant}/{site}/jobs"
+
+            for term in search_terms:
+                body = json.dumps({"appliedFacets": {}, "limit": 20, "offset": 0, "searchText": term}).encode("utf-8")
+                try:
+                    content = self.fetch_url(endpoint_url, method="POST", data=body, headers=headers)
+                    data = json.loads(content.decode("utf-8"))
+                    postings = data.get("jobPostings", [])
+
+                    for p in postings:
+                        title = (p.get("title") or "").strip()
+                        if not any(k in title.lower() for k in DEVOPS_ROLE_KEYWORDS):
+                            continue
+
+                        loc_text = p.get("locationsText") or "Unknown"
+                        posted_on = p.get("postedOn") or "Unknown"
+                        ext_path = p.get("externalPath") or ""
+                        
+                        # Compute base career URL
+                        base_site = endpoint_url.split("/wday/")[0]
+                        app_url = f"{base_site}{ext_path}" if ext_path else base_site
+
+                        # Parse postedOn (e.g. "Posted Today", "Posted Yesterday", "Posted 3 Days Ago")
+                        now = datetime.now(timezone.utc)
+                        posting_date = "Unknown"
+                        date_conf = "Unknown"
+                        
+                        if "today" in posted_on.lower():
+                            posting_date = now.isoformat()
+                            date_conf = "Verified"
+                        elif "yesterday" in posted_on.lower():
+                            posting_date = (now - timedelta(days=1)).isoformat()
+                            date_conf = "Verified"
+                        elif re.search(r"(\d+)\s+days?\s+ago", posted_on.lower()):
+                            m = re.search(r"(\d+)\s+days?\s+ago", posted_on.lower())
+                            days = int(m.group(1))
+                            posting_date = (now - timedelta(days=days)).isoformat()
+                            date_conf = "Verified"
+                        else:
+                            posting_date = "Unknown"
+                            date_conf = "Unknown"
+
+                        if app_url in seen_urls:
+                            continue
+                        seen_urls.add(app_url)
+
+                        jobs.append({
+                            "job_title": title,
+                            "company": name,
+                            "location": loc_text,
+                            "work_arrangement": "Remote" if "remote" in loc_text.lower() else "Onsite",
+                            "application_url": app_url,
+                            "source_url": app_url,
+                            "canonical_application_url": app_url,
+                            "source_name": f"Workday ({name})",
+                            "posting_date": posting_date,
+                            "date_confidence": date_conf,
+                            "posting_date_evidence": f"Workday postedOn: {posted_on}",
+                            "experience_required": "Unknown",
+                            "raw_snippet": f"{title} at {name} in {loc_text}. Posted: {posted_on}"
+                        })
+                except Exception as e:
+                    err = f"Workday tenant '{name}' error: {e}"
+                    errors.append(err)
+                    logger.warning(err)
+                    break
+
+        self.execution_time = time.time() - start_t
+        self.last_error = "; ".join(errors[:2]) if errors else None
+        return jobs
+
+
+class SmartRecruitersPublicJobSource(BaseSource):
+    """Public REST connector for employers using SmartRecruiters."""
+
+    def __init__(self, companies: List[str], user_agent: str, timeout: int = 8, time_budget: float = 25.0):
+        super().__init__("SmartRecruitersPublicAPI", user_agent, timeout, time_budget)
+        self.companies = companies
+
+    def fetch_jobs(self) -> List[Dict[str, Any]]:
+        start_t = time.time()
+        jobs: List[Dict[str, Any]] = []
+        errors: List[str] = []
+
+        for co in self.companies:
+            if time.time() - start_t > self.time_budget:
+                break
+
+            url = f"https://api.smartrecruiters.com/v1/companies/{co}/postings?limit=50"
+            try:
+                content = self.fetch_url(url)
+                data = json.loads(content.decode("utf-8"))
+                postings = data.get("content", [])
+
+                for p in postings:
+                    title = (p.get("name") or "").strip()
+                    if not any(k in title.lower() for k in DEVOPS_ROLE_KEYWORDS):
+                        continue
+
+                    loc_obj = p.get("location") or {}
+                    city = loc_obj.get("city") or ""
+                    country = loc_obj.get("country") or ""
+                    location_str = f"{city}, {country}".strip(", ") or "Unknown"
+
+                    released_date = p.get("releasedDate") or "Unknown"
+                    app_url = f"https://jobs.smartrecruiters.com/{co}/{p.get('id', '')}"
+
+                    jobs.append({
+                        "job_title": title,
+                        "company": co.title(),
+                        "location": location_str,
+                        "work_arrangement": "Remote" if "remote" in location_str.lower() else "Onsite",
+                        "application_url": app_url,
+                        "source_url": app_url,
+                        "canonical_application_url": app_url,
+                        "source_name": f"SmartRecruiters ({co.title()})",
+                        "posting_date": released_date,
+                        "date_confidence": "Verified" if released_date != "Unknown" else "Unknown",
+                        "posting_date_evidence": f"SmartRecruiters releasedDate: {released_date}",
+                        "experience_required": "Unknown",
+                        "raw_snippet": f"{title} at {co.title()} in {location_str}"
+                    })
+            except Exception as e:
+                err = f"SmartRecruiters '{co}' error: {e}"
+                errors.append(err)
+                logger.warning(err)
+
+        self.execution_time = time.time() - start_t
+        self.last_error = "; ".join(errors[:2]) if errors else None
         return jobs
 
 
 class RemotiveJobSource(BaseSource):
     """Public API connector for Remotive remote jobs."""
 
-    def __init__(self, category: str = "devops", user_agent: str = "DevOpsJobHunter/1.0", timeout: int = 12):
-        super().__init__("RemotiveAPI", user_agent, timeout)
+    def __init__(self, category: str = "devops", user_agent: str = "DevOpsJobHunter/2.0", timeout: int = 8, time_budget: float = 20.0):
+        super().__init__("RemotiveAPI", user_agent, timeout, time_budget)
         self.category = category
 
     def fetch_jobs(self) -> List[Dict[str, Any]]:
@@ -327,8 +578,8 @@ class RemotiveJobSource(BaseSource):
 class WeWorkRemotelyJobSource(BaseSource):
     """Permitted RSS feed connector for WeWorkRemotely DevOps & Sysadmin category."""
 
-    def __init__(self, rss_url: str, user_agent: str, timeout: int = 12):
-        super().__init__("WeWorkRemotely", user_agent, timeout)
+    def __init__(self, rss_url: str, user_agent: str, timeout: int = 8, time_budget: float = 20.0):
+        super().__init__("WeWorkRemotely", user_agent, timeout, time_budget)
         self.rss_url = rss_url
 
     def fetch_jobs(self) -> List[Dict[str, Any]]:
@@ -399,8 +650,8 @@ class WeWorkRemotelyJobSource(BaseSource):
 class JobicyJobSource(BaseSource):
     """Public API connector for Jobicy remote jobs."""
 
-    def __init__(self, user_agent: str, timeout: int = 12):
-        super().__init__("JobicyAPI", user_agent, timeout)
+    def __init__(self, user_agent: str, timeout: int = 8, time_budget: float = 20.0):
+        super().__init__("JobicyAPI", user_agent, timeout, time_budget)
 
     def fetch_jobs(self) -> List[Dict[str, Any]]:
         start_t = time.time()
@@ -453,12 +704,12 @@ class JobicyJobSource(BaseSource):
 class GoogleNewsJobSource(BaseSource):
     """
     Supplementary lead discovery connector via Google News RSS.
-    Strictly flags dates as Estimated (Feed Indexed Date), never infers location from queries,
-    and rejects aggregator landing/directory pages.
+    Strictly bounded with short per-query timeouts. Never leaks query keywords into location.
+    Explicitly tags dates as Estimated (Feed Indexed Date).
     """
 
-    def __init__(self, queries: List[str], user_agent: str, timeout: int = 12, delay: float = 1.0):
-        super().__init__("GoogleNewsRSS", user_agent, timeout)
+    def __init__(self, queries: List[str], user_agent: str, timeout: int = 5, time_budget: float = 20.0, delay: float = 0.5):
+        super().__init__("GoogleNewsRSS", user_agent, timeout, time_budget)
         self.queries = queries
         self.delay = delay
 
@@ -468,6 +719,10 @@ class GoogleNewsJobSource(BaseSource):
         errors: List[str] = []
 
         for q in self.queries:
+            if time.time() - start_t > self.time_budget:
+                logger.warning(f"GoogleNews connector reached time budget ({self.time_budget}s). Finishing with {len(jobs)} jobs.")
+                break
+
             time.sleep(self.delay)
             encoded = urllib.parse.quote(q)
             rss_url = f"https://news.google.com/rss/search?q={encoded}&hl=en-IN&gl=IN&ceid=IN:en"
@@ -482,7 +737,7 @@ class GoogleNewsJobSource(BaseSource):
                     if parsed:
                         jobs.append(parsed)
             except Exception as e:
-                err_msg = f"Query '{q}' error: {e}"
+                err_msg = f"Query '{q[:30]}' error: {e}"
                 logger.warning(err_msg)
                 errors.append(err_msg)
 
@@ -576,7 +831,6 @@ class GoogleNewsJobSource(BaseSource):
             elif "remote" in work_arrangement.lower():
                 location = "Remote (Location Unspecified)"
 
-        # Reject listings with no identifiable employer AND generic title
         if (company == "Unknown" or not company) and any(g in title.lower() for g in ["devops", "cloud engineer", "engineer"]) and "in " in title.lower():
             return None
 
@@ -611,6 +865,10 @@ class TargetedSearchLinkGenerator:
                 {
                     "title": "LinkedIn: AWS Cloud Support / Administrator (Remote India, < 24 Hours)",
                     "url": "https://www.linkedin.com/jobs/search/?keywords=AWS%20Cloud%20Support%20OR%20Administrator&location=India&f_WT=2&f_TPR=r86400&f_E=1%2C2"
+                },
+                {
+                    "title": "LinkedIn: DevOps / Infrastructure (Pune, Past Week)",
+                    "url": "https://www.linkedin.com/jobs/search/?keywords=DevOps%20OR%20Infrastructure&location=Pune%2C%20Maharashtra%2C%20India&f_TPR=r604800&f_E=1%2C2"
                 }
             ],
             "Naukri.com": [
@@ -621,6 +879,10 @@ class TargetedSearchLinkGenerator:
                 {
                     "title": "Naukri: Remote Cloud / Infrastructure Engineer (India, 0-3 Yrs, Last 1 Day)",
                     "url": "https://www.naukri.com/remote-devops-jobs?k=devops%20OR%20cloud&wfhType=2&experience=0&experience=3&jobAge=1"
+                },
+                {
+                    "title": "Naukri: DevOps Fresher / Trainee (Pune, 0-1 Yrs)",
+                    "url": "https://www.naukri.com/junior-devops-jobs-in-pune?k=junior%20devops%20OR%20fresher&cityTypeGid=9508&experience=0&experience=1"
                 }
             ],
             "Indeed India": [
@@ -632,6 +894,12 @@ class TargetedSearchLinkGenerator:
                     "title": "Indeed: Remote Cloud Administrator (India, Last 24 Hours)",
                     "url": "https://in.indeed.com/jobs?q=cloud+administrator&l=Remote&fromage=1"
                 }
+            ],
+            "Glassdoor": [
+                {
+                    "title": "Glassdoor: DevOps Engineer Jobs in Pune",
+                    "url": "https://www.glassdoor.co.in/Job/pune-devops-engineer-jobs-SRCH_IL.0,4_IC2865327_KO5,20.htm"
+                }
             ]
         }
 
@@ -639,8 +907,9 @@ class TargetedSearchLinkGenerator:
 class SourceManager:
     """Orchestrates all configured source connectors and generates audit report."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], targets_file: Optional[str] = None):
         self.config = config
+        self.targets_file = targets_file or str(os.path.join(os.path.dirname(__file__), "company_targets.json"))
         self.sources: List[BaseSource] = []
         self._initialize_sources()
 
@@ -648,52 +917,74 @@ class SourceManager:
         sources_cfg = self.config.get("sources_config", {})
         settings = self.config.get("settings", {})
         ua = settings.get("user_agent", "DevOpsJobHunter/2.0 (Windows NT 10.0)")
-        timeout = settings.get("request_timeout_seconds", 12)
-        delay = settings.get("request_delay_seconds", 1.0)
+        timeout = settings.get("request_timeout_seconds", 8)
 
-        # 1. Greenhouse Public Boards
-        gh_cfg = sources_cfg.get("greenhouse_public_boards", {})
-        if gh_cfg.get("enabled", True):
-            boards = gh_cfg.get("company_boards", ["gitlab", "canonical", "elastic", "wikimedia", "sumologic"])
-            if boards:
-                self.sources.append(GreenhousePublicJobSource(boards, ua, timeout))
+        # Load verified target companies from company_targets.json if available
+        gh_boards = ["druva", "zscaler", "logicmonitor", "solarwinds", "rubrik", "gitlab", "canonical", "elastic", "wikimedia", "sumologic", "okta", "purestorage", "pagerduty", "jfrog"]
+        lever_boards = ["palantir", "spotify", "toptal", "sonatype"]
+        ashby_boards = ["snowflake", "airbyte", "vanta", "ramp", "linear", "notion", "cursor"]
+        workday_tenants = [
+            {"name": "Salesforce", "tenant": "salesforce", "site": "External_Career_Site", "endpoint": "https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/jobs"},
+            {"name": "Mastercard", "tenant": "mastercard", "site": "CorporateCareers", "endpoint": "https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/jobs"}
+        ]
+        sr_companies = ["colliers"]
 
-        # 2. Lever Public Boards
-        lever_cfg = sources_cfg.get("lever_public_boards", {})
-        if lever_cfg.get("enabled", True):
-            boards = lever_cfg.get("company_boards", ["palantir", "spotify"])
-            if boards:
-                self.sources.append(LeverPublicJobSource(boards, ua, timeout))
+        # Override or augment from config.json if specified
+        if "greenhouse_public_boards" in sources_cfg:
+            cfg_boards = sources_cfg["greenhouse_public_boards"].get("company_boards", [])
+            if cfg_boards:
+                gh_boards = list(dict.fromkeys(gh_boards + cfg_boards))
 
-        # 3. Ashby Public Boards
-        ashby_cfg = sources_cfg.get("ashby_public_boards", {})
-        if ashby_cfg.get("enabled", True):
-            boards = ashby_cfg.get("company_boards", ["airbyte", "vanta", "ramp", "linear", "notion", "cursor"])
-            if boards:
-                self.sources.append(AshbyPublicJobSource(boards, ua, timeout))
+        if "lever_public_boards" in sources_cfg:
+            cfg_lever = sources_cfg["lever_public_boards"].get("company_boards", [])
+            if cfg_lever:
+                lever_boards = list(dict.fromkeys(lever_boards + cfg_lever))
 
-        # 4. Jobicy Remote Jobs API
-        jobicy_cfg = sources_cfg.get("jobicy_api", {})
-        if jobicy_cfg.get("enabled", True):
-            self.sources.append(JobicyJobSource(ua, timeout))
+        if "ashby_public_boards" in sources_cfg:
+            cfg_ashby = sources_cfg["ashby_public_boards"].get("company_boards", [])
+            if cfg_ashby:
+                ashby_boards = list(dict.fromkeys(ashby_boards + cfg_ashby))
 
-        # 5. We Work Remotely RSS
+        # 1. Greenhouse
+        if sources_cfg.get("greenhouse_public_boards", {}).get("enabled", True):
+            self.sources.append(GreenhousePublicJobSource(gh_boards, ua, timeout, time_budget=30.0))
+
+        # 2. Lever
+        if sources_cfg.get("lever_public_boards", {}).get("enabled", True):
+            self.sources.append(LeverPublicJobSource(lever_boards, ua, timeout=6, time_budget=35.0))
+
+        # 3. Ashby
+        if sources_cfg.get("ashby_public_boards", {}).get("enabled", True):
+            self.sources.append(AshbyPublicJobSource(ashby_boards, ua, timeout, time_budget=25.0))
+
+        # 4. Workday CXS
+        self.sources.append(WorkdayPublicJobSource(workday_tenants, ua, timeout, time_budget=25.0))
+
+        # 5. SmartRecruiters
+        self.sources.append(SmartRecruitersPublicJobSource(sr_companies, ua, timeout, time_budget=20.0))
+
+        # 6. Jobicy API
+        if sources_cfg.get("jobicy_api", {}).get("enabled", True):
+            self.sources.append(JobicyJobSource(ua, timeout, time_budget=15.0))
+
+        # 7. We Work Remotely RSS
         wwr_cfg = sources_cfg.get("we_work_remotely_rss", {})
         if wwr_cfg.get("enabled", True):
             rss_url = wwr_cfg.get("url", "https://weworkremotely.com/categories/remote-devops-sysadmin-jobs.rss")
-            self.sources.append(WeWorkRemotelyJobSource(rss_url, ua, timeout))
+            self.sources.append(WeWorkRemotelyJobSource(rss_url, ua, timeout, time_budget=15.0))
 
-        # 6. Remotive Public API
+        # 8. Remotive API
         rem_cfg = sources_cfg.get("remotive_api", {})
         if rem_cfg.get("enabled", True):
             cat = rem_cfg.get("category", "devops")
-            self.sources.append(RemotiveJobSource(cat, ua, timeout))
+            self.sources.append(RemotiveJobSource(cat, ua, timeout, time_budget=15.0))
 
-        # 7. Supplementary Google News RSS
+        # 9. Supplementary Google News RSS
         gn_cfg = sources_cfg.get("google_news_rss", {})
         if gn_cfg.get("enabled", True):
             queries = gn_cfg.get("queries", [])
-            self.sources.append(GoogleNewsJobSource(queries, ua, timeout, delay))
+            if queries:
+                self.sources.append(GoogleNewsJobSource(queries, ua, timeout=5, time_budget=20.0, delay=0.5))
 
     def fetch_all(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
         all_jobs: List[Dict[str, Any]] = []

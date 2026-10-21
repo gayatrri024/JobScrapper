@@ -1,3 +1,6 @@
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 """
 main.py - Entry point and CLI runner for DevOps Job Hunter.
 
@@ -20,6 +23,7 @@ import argparse
 import json
 import logging
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -28,7 +32,8 @@ from typing import Any, Dict, List, Optional
 BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR))
 
-from database import JobDatabase, format_utc_to_ist, VALID_OUTREACH_STATUSES
+from database import JobDatabase, format_utc_to_ist, VALID_OUTREACH_STATUSES, FOREIGN_REMOTE_PATTERN
+from excel_export import ExcelJobExporter, deduplicate_jobs
 from scoring import JobScorer
 from sources import SourceManager, TargetedSearchLinkGenerator
 from recruiter_scoring import RecruiterScorer
@@ -78,7 +83,7 @@ def print_source_report(report: list) -> None:
     print("-" * 80)
 
 
-def print_diagnostic_report(raw_jobs: List[Dict[str, Any]], scored_jobs: List[Dict[str, Any]], max_days: Optional[float], pune_remote: bool) -> None:
+def print_diagnostic_report(raw_jobs: List[Dict[str, Any]], scored_jobs: List[Dict[str, Any]], max_days: Optional[float], pune_remote: bool, db: Optional[JobDatabase] = None) -> None:
     total_fetched = len(raw_jobs)
     valid_dates = 0
     unknown_dates = 0
@@ -148,6 +153,48 @@ def print_diagnostic_report(raw_jobs: List[Dict[str, Any]], scored_jobs: List[Di
     print(f"  [+] Strictly Verified Matches:    {retained_verified}")
     print(f"  [?] Supplementary Leads (Unver):  {retained_leads}")
     print("-" * 80)
+
+    if db is not None:
+        stored = db.get_jobs(limit=2000, exclude_disqualified=False)
+        db_total = len(stored)
+        db_rej_age = 0
+        db_rej_senior = 0
+        db_rej_location = 0
+        db_rej_unverified = 0
+
+        for sj in stored:
+            h_ago = sj.get("hours_ago")
+            gaps = (sj.get("potential_gaps") or "").lower()
+            d_conf = sj.get("date_confidence") or "Unknown"
+
+            if "senior role" in gaps or "exceeds" in gaps:
+                db_rej_senior += 1
+            loc_low = (sj.get("location") or "").lower()
+            arr_low = (sj.get("work_arrangement") or "").lower()
+            if pune_remote:
+                is_pune = "pune" in loc_low
+                is_remote = "remote" in arr_low or "remote" in loc_low
+                if not (is_pune or is_remote):
+                    db_rej_location += 1
+            if d_conf != "Verified":
+                db_rej_unverified += 1
+            if max_days is not None:
+                if h_ago is None or h_ago > (max_days * 24.0):
+                    db_rej_age += 1
+
+        print("\n--- DATABASE STORED JOBS AUDIT ---")
+        print(f"Total Stored Jobs in DB:            {db_total}")
+        if db_total > 0:
+            if max_days is not None:
+                print(f"  * Rejected by Age Cutoff ({age_str}):    {db_rej_age} ({db_rej_age/db_total*100:.1f}%)")
+            print(f"  * Rejected for Senior / >3 Years: {db_rej_senior} ({db_rej_senior/db_total*100:.1f}%)")
+            if pune_remote:
+                print(f"  * Rejected by Pune/Remote Filter: {db_rej_location} ({db_rej_location/db_total*100:.1f}%)")
+            print(f"  * Non-Verified Date Confidence:   {db_rej_unverified} ({db_rej_unverified/db_total*100:.1f}%)")
+            print("EXPLANATION: Previously stored records reflect prior scans (e.g. Oct 14-16).")
+            print("When a strict 24-hour or 7-day cutoff is applied, historical jobs are correctly rejected.")
+            print("Filters remain strict to guarantee data authenticity; only fresh discoveries qualify.")
+        print("-" * 80)
 
 
 def generate_search_links_doc(filepath: Path) -> None:
@@ -226,8 +273,9 @@ def run_pipeline(
     pune_remote_override: Optional[bool] = None,
     strict_override: Optional[bool] = None,
     diagnostic: bool = False,
-    top_n: Optional[int] = None
-) -> None:
+    top_n: Optional[int] = None,
+    output_format: str = "excel"
+) -> Optional[Path]:
     settings = config.get("settings", {})
     filters = config.get("filters", {})
 
@@ -249,16 +297,20 @@ def run_pipeline(
     raw_jobs, report = source_mgr.fetch_all()
     print_source_report(report)
 
+    total_fetched = len(raw_jobs)
     if not raw_jobs:
         print("[!] No jobs discovered across enabled sources.")
-        return
+        return None
 
-    print(f"[*] Scoring and deduplicating {len(raw_jobs)} discovered opportunities...")
+    # Global URL Deduplication across all queries and sources
+    deduped_raw_jobs, dupes_removed = deduplicate_jobs(raw_jobs)
+    print(f"[*] Deduplicated {total_fetched} raw listings into {len(deduped_raw_jobs)} unique vacancies ({dupes_removed} duplicates removed).")
+
     inserted_count = 0
     updated_count = 0
     scored_jobs = []
 
-    for raw in raw_jobs:
+    for raw in deduped_raw_jobs:
         score_data = scorer.score_job(raw)
         raw.update(score_data)
         scored_jobs.append(raw)
@@ -270,49 +322,91 @@ def run_pipeline(
             else:
                 updated_count += 1
 
+    # Filter matching vacancies based on candidate criteria
+    filtered_jobs = []
+    for j in scored_jobs:
+        if j.get("match_score", 0.0) < min_score:
+            continue
+        if strict and j.get("date_confidence") != "Verified":
+            continue
+        h_ago = j.get("hours_ago")
+        if max_days is not None:
+            if h_ago is None or h_ago > (max_days * 24.0):
+                continue
+        if pune_remote:
+            loc_low = (j.get("location") or "").lower()
+            arr_low = (j.get("work_arrangement") or "").lower()
+            raw_low = (j.get("raw_snippet") or "").lower()
+            is_pune = "pune" in loc_low or "pune" in raw_low
+            is_remote = "remote" in arr_low or "remote" in loc_low or "work from home" in raw_low or "anywhere" in loc_low or "worldwide" in loc_low
+            has_foreign = bool(re.search(r"\b(united\s+states|usa|u\.s\.|canada|united\s+kingdom|uk|london|germany|poland|brazil|mexico|argentina|australia|singapore|ireland|california|san\s+francisco|san\s+jose|washington|seattle|new\s+york|texas|austin|chicago|bellevue)\b", loc_low))
+            has_india_global = bool(re.search(r"\b(india|pune|bangalore|bengaluru|hyderabad|worldwide|anywhere|global)\b", loc_low))
+            foreign_restricted = bool(FOREIGN_REMOTE_PATTERN.search(loc_low) or FOREIGN_REMOTE_PATTERN.search(raw_low) or (has_foreign and not has_india_global))
+            if not (is_pune or (is_remote and not foreign_restricted)):
+                continue
+
+        filtered_jobs.append(j)
+
     if diagnostic:
-        print_diagnostic_report(raw_jobs, scored_jobs, max_days, pune_remote)
+        print_diagnostic_report(raw_jobs, scored_jobs, max_days, pune_remote, db=db)
 
+    # Export to Excel Workbook
+    excel_exporter = ExcelJobExporter(output_dir=BASE_DIR / "output")
+    excel_path = None
+    exported_cnt = 0
+
+    if not dry_run:
+        excel_path, exported_cnt, _ = excel_exporter.export_jobs(filtered_jobs, deduplicate=False)
+        # Update backward-compatible CSV exports and search links
+        db.export_to_csv(
+            str(csv_file),
+            min_score=min_score,
+            max_age_days=max_days,
+            pune_or_remote_only=pune_remote,
+            strict_verified_only=True
+        )
+        db.export_to_csv(
+            str(leads_csv_file),
+            min_score=min_score,
+            max_age_days=max_days,
+            pune_or_remote_only=pune_remote,
+            strict_verified_only=False
+        )
+        generate_search_links_doc(links_file)
+    else:
+        excel_path = excel_exporter.generate_filepath()
+        exported_cnt = len(filtered_jobs)
+
+    # Collect source failure warnings
+    source_warnings = []
+    for r in report:
+        if r.get("status") in ["FAILED", "PARTIAL"] or r.get("error") not in [None, "None"]:
+            err_msg = r.get("error") or r.get("status")
+            source_warnings.append(f"{r['source']} ({err_msg})")
+
+    # Concise Terminal Summary
+    print("\n" + "=" * 68)
+    print("  SCAN SUMMARY & EXCEL REPORT")
+    print("=" * 68)
+    print(f"Total jobs fetched:             {total_fetched}")
+    print(f"Duplicate jobs removed:         {dupes_removed}")
+    print(f"Jobs remaining after filtering: {len(filtered_jobs)}")
+    print(f"Number of jobs exported:        {exported_cnt}")
     if dry_run:
-        print(f"[DRY RUN] Evaluated {len(raw_jobs)} jobs. Database writes skipped.")
-        sorted_jobs = sorted(raw_jobs, key=lambda x: x["match_score"], reverse=True)
-        print("\n--- TOP MATCHES (DRY RUN) ---")
-        for j in sorted_jobs[:5]:
-            print(f"[{j['priority']} - {j['match_score']:.1f}/100] {j['job_title']} @ {j['company']} ({j['location']})")
-            print(f"   Link: {j.get('canonical_application_url') or j['application_url']}\n")
-        return
+        print(f"Excel destination (Dry-Run):    {excel_path}")
+        print("[DRY RUN] Evaluated jobs. Database writes skipped.")
+    else:
+        print(f"Excel report saved:             {excel_path}")
+    if source_warnings:
+        print(f"Source warnings:                {'; '.join(source_warnings[:2])}")
+    print("=" * 68 + "\n")
 
-    print(f"[+] Pipeline complete: {inserted_count} new opportunities inserted, {updated_count} existing refreshed.")
+    # Only print full card details in terminal if explicitly requested
+    if output_format == "terminal" or top_n is not None:
+        limit = top_n if top_n is not None else 10
+        print_top_jobs(db, limit=limit, max_days=max_days, pune_remote=pune_remote, strict=strict)
 
-    # Export strictly verified matches to primary ranked CSV
-    print(f"[*] Exporting strictly verified ranked jobs to: {csv_file}")
-    verified_count = db.export_to_csv(
-        str(csv_file),
-        min_score=min_score,
-        max_age_days=max_days,
-        pune_or_remote_only=pune_remote,
-        strict_verified_only=True
-    )
-    print(f"[+] Exported {verified_count} strictly verified jobs to: {csv_file}")
-
-    # Export unverified supplementary leads to leads CSV
-    print(f"[*] Exporting supplementary leads (unverified/crawl dates) to: {leads_csv_file}")
-    leads_count = db.export_to_csv(
-        str(leads_csv_file),
-        min_score=min_score,
-        max_age_days=max_days,
-        pune_or_remote_only=pune_remote,
-        strict_verified_only=False
-    )
-    print(f"[+] Exported {leads_count} total opportunities (including leads) to: {leads_csv_file}")
-
-    # Generate manual pre-filtered search links
-    generate_search_links_doc(links_file)
-
-    # Display overall metrics and top jobs
-    limit = top_n if top_n is not None else 10
-    print_stats(db, max_days=max_days, pune_remote=pune_remote, strict=strict)
-    print_top_jobs(db, limit=limit, max_days=max_days, pune_remote=pune_remote, strict=strict)
+    return excel_path
 
 
 def print_recruiter_source_report(report: list) -> None:
@@ -501,7 +595,9 @@ def main():
     parser.add_argument("--pune-remote", action="store_true", help="Filter strictly for Pune and Remote India roles")
     parser.add_argument("--strict", action="store_true", help="Require verified employer posting dates only")
     parser.add_argument("--diagnostic", action="store_true", help="Show diagnostic filtering funnel and breakdown")
+    parser.add_argument("--output-format", choices=["excel", "terminal", "csv"], default="excel", help="Output format for discovered jobs (default: excel)")
     parser.add_argument("--generate-links", action="store_true", help="Generate markdown file with pre-filtered search links")
+    parser.add_argument("--revalidate-urls", type=int, nargs="?", const=50, default=None, help="Recheck active liveness status of stored URLs in database")
     parser.add_argument("--dry-run", action="store_true", help="Fetch and score jobs or recruiters without writing to SQLite")
     parser.add_argument("--set-status", nargs=2, metavar=("JOB_ID", "STATUS"), help="Set job status (New, Applied, Reviewed, Archived)")
     parser.add_argument("--notes", help="Notes to attach with --set-status or --set-recruiter-status")
@@ -647,6 +743,14 @@ def main():
 
     # --- EXISTING JOB-HUNTER CLI ACTIONS ---
 
+    if args.revalidate_urls is not None:
+        print(f"[*] Revalidating liveness for up to {args.revalidate_urls} stored job URLs...")
+        counts = db.revalidate_stored_jobs(limit=args.revalidate_urls)
+        print(r"--- ACTIVE URL LIVENESS AUDIT ---")
+        for status, cnt in sorted(counts.items()):
+            print(f"  * {status:<35}: {cnt}")
+        return
+
     if args.generate_links:
         generate_search_links_doc(links_file)
         return
@@ -686,16 +790,33 @@ def main():
 
     if args.export_only:
         min_score = args.min_score if args.min_score is not None else settings.get("min_export_score", 40.0)
-        cnt = db.export_to_csv(
-            str(csv_file),
-            min_score=min_score,
-            max_age_days=max_days,
-            pune_or_remote_only=pune_remote,
-            strict_verified_only=strict,
-            limit=args.top
-        )
-        print(f"[+] Exported {cnt} jobs to {csv_file}")
-        print_top_jobs(db, limit=args.top or 15, max_days=max_days, pune_remote=pune_remote, strict=strict)
+        if args.output_format == "excel":
+            excel_path, cnt, dupes = db.export_to_excel(
+                output_dir=BASE_DIR / "output",
+                min_score=min_score,
+                max_age_days=max_days,
+                pune_or_remote_only=pune_remote,
+                strict_verified_only=strict,
+                limit=args.top
+            )
+            print("\n" + "=" * 68)
+            print("  EXCEL EXPORT SUMMARY")
+            print("=" * 68)
+            print(f"Number of jobs exported:        {cnt}")
+            print(f"Duplicates removed:             {dupes}")
+            print(f"Excel report saved:             {excel_path}")
+            print("=" * 68 + "\n")
+        else:
+            cnt = db.export_to_csv(
+                str(csv_file),
+                min_score=min_score,
+                max_age_days=max_days,
+                pune_or_remote_only=pune_remote,
+                strict_verified_only=strict,
+                limit=args.top
+            )
+            print(f"[+] Exported {cnt} jobs to {csv_file}")
+            print_top_jobs(db, limit=args.top or 15, max_days=max_days, pune_remote=pune_remote, strict=strict)
         return
 
     run_pipeline(
@@ -706,7 +827,8 @@ def main():
         pune_remote_override=pune_remote,
         strict_override=args.strict,
         diagnostic=args.diagnostic,
-        top_n=args.top
+        top_n=args.top,
+        output_format=args.output_format
     )
 
 

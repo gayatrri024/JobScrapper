@@ -1,0 +1,2177 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "description": "Target company registry for DevOps & Cloud Job Hunter",
+    "total_companies": 171,
+    "direct_ats_supported_count": 28
+  },
+  "companies": [
+    {
+      "name": "Microsoft",
+      "aliases": [
+        "Microsoft India"
+      ],
+      "career_url": "https://careers.microsoft.com/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Oracle",
+      "aliases": [
+        "Oracle India"
+      ],
+      "career_url": "https://www.oracle.com/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "IBM",
+      "aliases": [
+        "IBM India",
+        "IBM Emptoris"
+      ],
+      "career_url": "https://www.ibm.com/employment/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Adobe",
+      "aliases": [
+        "Adobe India"
+      ],
+      "career_url": "https://www.adobe.com/careers.html",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Salesforce",
+      "aliases": [
+        "Salesforce India"
+      ],
+      "career_url": "https://careers.salesforce.com/",
+      "pune_office": false,
+      "ats_platform": "workday",
+      "ats_board_identifier": "salesforce",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://salesforce.wd12.myworkdayjobs.com/External_Career_Site"
+    },
+    {
+      "name": "SAP",
+      "aliases": [
+        "SAP Labs India"
+      ],
+      "career_url": "https://jobs.sap.com/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "VMware",
+      "aliases": [
+        "VMware India",
+        "Broadcom"
+      ],
+      "career_url": "https://careers.broadcom.com/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Dell Technologies",
+      "aliases": [
+        "Dell",
+        "Dell India"
+      ],
+      "career_url": "https://jobs.dell.com/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "HPE",
+      "aliases": [
+        "Hewlett Packard Enterprise",
+        "HP"
+      ],
+      "career_url": "https://careers.hpe.com/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Intel",
+      "aliases": [
+        "Intel India"
+      ],
+      "career_url": "https://jobs.intel.com/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Qualcomm",
+      "aliases": [
+        "Qualcomm India"
+      ],
+      "career_url": "https://www.qualcomm.com/company/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "ServiceNow",
+      "aliases": [
+        "ServiceNow India"
+      ],
+      "career_url": "https://careers.servicenow.com/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Snowflake",
+      "aliases": [
+        "Snowflake Computing"
+      ],
+      "career_url": "https://careers.snowflake.com/",
+      "pune_office": false,
+      "ats_platform": "ashby",
+      "ats_board_identifier": "snowflake",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://api.ashbyhq.com/posting-api/job-board/snowflake"
+    },
+    {
+      "name": "Splunk",
+      "aliases": [
+        "Splunk Cisco",
+        "Cisco Systems"
+      ],
+      "career_url": "https://www.splunk.com/en_us/careers.html",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Rubrik",
+      "aliases": [
+        "Rubrik India"
+      ],
+      "career_url": "https://www.rubrik.com/company/careers",
+      "pune_office": false,
+      "ats_platform": "greenhouse",
+      "ats_board_identifier": "rubrik",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://boards-api.greenhouse.io/v1/boards/rubrik/jobs"
+    },
+    {
+      "name": "Cohesity",
+      "aliases": [
+        "Cohesity India"
+      ],
+      "career_url": "https://www.cohesity.com/company/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Pure Storage",
+      "aliases": [
+        "Pure Storage India"
+      ],
+      "career_url": "https://www.purestorage.com/company/careers.html",
+      "pune_office": false,
+      "ats_platform": "greenhouse",
+      "ats_board_identifier": "purestorage",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://boards-api.greenhouse.io/v1/boards/purestorage/jobs"
+    },
+    {
+      "name": "NetApp",
+      "aliases": [
+        "NetApp India"
+      ],
+      "career_url": "https://www.netapp.com/company/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Nutanix",
+      "aliases": [
+        "Nutanix India"
+      ],
+      "career_url": "https://www.nutanix.com/company/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "CrowdStrike",
+      "aliases": [
+        "CrowdStrike India"
+      ],
+      "career_url": "https://www.crowdstrike.com/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Okta",
+      "aliases": [
+        "Okta India",
+        "Auth0"
+      ],
+      "career_url": "https://www.okta.com/company/careers/",
+      "pune_office": false,
+      "ats_platform": "greenhouse",
+      "ats_board_identifier": "okta",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://boards-api.greenhouse.io/v1/boards/okta/jobs"
+    },
+    {
+      "name": "F5 Networks",
+      "aliases": [
+        "F5",
+        "F5 India"
+      ],
+      "career_url": "https://www.f5.com/company/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Zscaler",
+      "aliases": [
+        "Zscaler India"
+      ],
+      "career_url": "https://www.zscaler.com/careers",
+      "pune_office": false,
+      "ats_platform": "greenhouse",
+      "ats_board_identifier": "zscaler",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://boards-api.greenhouse.io/v1/boards/zscaler/jobs"
+    },
+    {
+      "name": "Canonical",
+      "aliases": [
+        "Ubuntu"
+      ],
+      "career_url": "https://canonical.com/careers",
+      "pune_office": false,
+      "ats_platform": "greenhouse",
+      "ats_board_identifier": "canonical",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://boards-api.greenhouse.io/v1/boards/canonical/jobs"
+    },
+    {
+      "name": "GitLab",
+      "aliases": [
+        "GitLab Inc"
+      ],
+      "career_url": "https://about.gitlab.com/jobs/",
+      "pune_office": false,
+      "ats_platform": "greenhouse",
+      "ats_board_identifier": "gitlab",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://boards-api.greenhouse.io/v1/boards/gitlab/jobs"
+    },
+    {
+      "name": "Elastic",
+      "aliases": [
+        "Elasticsearch"
+      ],
+      "career_url": "https://www.elastic.co/careers",
+      "pune_office": false,
+      "ats_platform": "greenhouse",
+      "ats_board_identifier": "elastic",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://boards-api.greenhouse.io/v1/boards/elastic/jobs"
+    },
+    {
+      "name": "Wikimedia",
+      "aliases": [
+        "Wikimedia Foundation"
+      ],
+      "career_url": "https://wikimediafoundation.org/about/jobs/",
+      "pune_office": false,
+      "ats_platform": "greenhouse",
+      "ats_board_identifier": "wikimedia",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://boards-api.greenhouse.io/v1/boards/wikimedia/jobs"
+    },
+    {
+      "name": "Sumo Logic",
+      "aliases": [
+        "SumoLogic India"
+      ],
+      "career_url": "https://www.sumologic.com/company/careers/",
+      "pune_office": false,
+      "ats_platform": "greenhouse",
+      "ats_board_identifier": "sumologic",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://boards-api.greenhouse.io/v1/boards/sumologic/jobs"
+    },
+    {
+      "name": "Palantir",
+      "aliases": [
+        "Palantir Technologies"
+      ],
+      "career_url": "https://www.palantir.com/careers/",
+      "pune_office": false,
+      "ats_platform": "lever",
+      "ats_board_identifier": "palantir",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://api.lever.co/v0/postings/palantir?mode=json"
+    },
+    {
+      "name": "Spotify",
+      "aliases": [
+        "Spotify India"
+      ],
+      "career_url": "https://www.lifeatspotify.com/jobs",
+      "pune_office": false,
+      "ats_platform": "lever",
+      "ats_board_identifier": "spotify",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://api.lever.co/v0/postings/spotify?mode=json"
+    },
+    {
+      "name": "Toptal",
+      "aliases": [
+        "Toptal LLC"
+      ],
+      "career_url": "https://www.toptal.com/careers",
+      "pune_office": false,
+      "ats_platform": "lever",
+      "ats_board_identifier": "toptal",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://api.lever.co/v0/postings/toptal?mode=json"
+    },
+    {
+      "name": "Sonatype",
+      "aliases": [
+        "Sonatype Nexus"
+      ],
+      "career_url": "https://www.sonatype.com/company/careers",
+      "pune_office": false,
+      "ats_platform": "lever",
+      "ats_board_identifier": "sonatype",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://api.lever.co/v0/postings/sonatype?mode=json"
+    },
+    {
+      "name": "Airbyte",
+      "aliases": [
+        "Airbyte Inc"
+      ],
+      "career_url": "https://airbyte.com/careers",
+      "pune_office": false,
+      "ats_platform": "ashby",
+      "ats_board_identifier": "airbyte",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://api.ashbyhq.com/posting-api/job-board/airbyte"
+    },
+    {
+      "name": "Vanta",
+      "aliases": [
+        "Vanta Inc"
+      ],
+      "career_url": "https://www.vanta.com/careers",
+      "pune_office": false,
+      "ats_platform": "ashby",
+      "ats_board_identifier": "vanta",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://api.ashbyhq.com/posting-api/job-board/vanta"
+    },
+    {
+      "name": "Ramp",
+      "aliases": [
+        "Ramp Financial"
+      ],
+      "career_url": "https://ramp.com/careers",
+      "pune_office": false,
+      "ats_platform": "ashby",
+      "ats_board_identifier": "ramp",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://api.ashbyhq.com/posting-api/job-board/ramp"
+    },
+    {
+      "name": "Linear",
+      "aliases": [
+        "Linear App"
+      ],
+      "career_url": "https://linear.app/careers",
+      "pune_office": false,
+      "ats_platform": "ashby",
+      "ats_board_identifier": "linear",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://api.ashbyhq.com/posting-api/job-board/linear"
+    },
+    {
+      "name": "Notion",
+      "aliases": [
+        "Notion Labs"
+      ],
+      "career_url": "https://www.notion.so/careers",
+      "pune_office": false,
+      "ats_platform": "ashby",
+      "ats_board_identifier": "notion",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://api.ashbyhq.com/posting-api/job-board/notion"
+    },
+    {
+      "name": "Cursor",
+      "aliases": [
+        "Anysphere"
+      ],
+      "career_url": "https://www.cursor.com/careers",
+      "pune_office": false,
+      "ats_platform": "ashby",
+      "ats_board_identifier": "cursor",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://api.ashbyhq.com/posting-api/job-board/cursor"
+    },
+    {
+      "name": "PagerDuty",
+      "aliases": [
+        "PagerDuty India"
+      ],
+      "career_url": "https://www.pagerduty.com/careers/",
+      "pune_office": false,
+      "ats_platform": "greenhouse",
+      "ats_board_identifier": "pagerduty",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://boards-api.greenhouse.io/v1/boards/pagerduty/jobs"
+    },
+    {
+      "name": "JFrog",
+      "aliases": [
+        "JFrog Artifactory"
+      ],
+      "career_url": "https://jfrog.com/careers/",
+      "pune_office": false,
+      "ats_platform": "greenhouse",
+      "ats_board_identifier": "jfrog",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://boards-api.greenhouse.io/v1/boards/jfrog/jobs"
+    },
+    {
+      "name": "LogicMonitor",
+      "aliases": [
+        "LogicMonitor India"
+      ],
+      "career_url": "https://www.logicmonitor.com/careers",
+      "pune_office": false,
+      "ats_platform": "greenhouse",
+      "ats_board_identifier": "logicmonitor",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://boards-api.greenhouse.io/v1/boards/logicmonitor/jobs"
+    },
+    {
+      "name": "SolarWinds",
+      "aliases": [
+        "SolarWinds India"
+      ],
+      "career_url": "https://www.solarwinds.com/careers",
+      "pune_office": false,
+      "ats_platform": "greenhouse",
+      "ats_board_identifier": "solarwinds",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://boards-api.greenhouse.io/v1/boards/solarwinds/jobs"
+    },
+    {
+      "name": "Druva",
+      "aliases": [
+        "Druva Cloud",
+        "Druva Data Solutions"
+      ],
+      "career_url": "https://www.druva.com/about/careers/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "greenhouse",
+      "ats_board_identifier": "druva",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://boards-api.greenhouse.io/v1/boards/druva/jobs"
+    },
+    {
+      "name": "Icertis",
+      "aliases": [
+        "Icertis Contract Intelligence"
+      ],
+      "career_url": "https://www.icertis.com/company/careers/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Persistent Systems",
+      "aliases": [
+        "Persistent"
+      ],
+      "career_url": "https://www.persistent.com/careers/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Whatfix",
+      "aliases": [
+        "Whatfix India"
+      ],
+      "career_url": "https://whatfix.com/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Turing",
+      "aliases": [
+        "Turing.com"
+      ],
+      "career_url": "https://www.turing.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Uplers",
+      "aliases": [
+        "Uplers Talent"
+      ],
+      "career_url": "https://www.uplers.com/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Darwinbox",
+      "aliases": [
+        "Darwinbox HR"
+      ],
+      "career_url": "https://darwinbox.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "MoEngage",
+      "aliases": [
+        "MoEngage Inc"
+      ],
+      "career_url": "https://www.moengage.com/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "LeadSquared",
+      "aliases": [
+        "MarketXpander Services"
+      ],
+      "career_url": "https://www.leadsquared.com/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Kissflow",
+      "aliases": [
+        "OrangeScape"
+      ],
+      "career_url": "https://kissflow.com/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Yellow.ai",
+      "aliases": [
+        "Yellow Messenger"
+      ],
+      "career_url": "https://yellow.ai/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Observe.AI",
+      "aliases": [
+        "Observe AI"
+      ],
+      "career_url": "https://www.observe.ai/company/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Airmeet",
+      "aliases": [
+        "Airmeet Networks"
+      ],
+      "career_url": "https://www.airmeet.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Nykaa",
+      "aliases": [
+        "FSN E-Commerce"
+      ],
+      "career_url": "https://www.nykaa.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "PayU",
+      "aliases": [
+        "PayU Payments",
+        "Prosus"
+      ],
+      "career_url": "https://corporate.payu.com/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "BharatPe",
+      "aliases": [
+        "Resilient Innovations"
+      ],
+      "career_url": "https://bharatpe.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Lenskart",
+      "aliases": [
+        "Lenskart Solutions"
+      ],
+      "career_url": "https://careers.lenskart.com/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Delhivery",
+      "aliases": [
+        "Delhivery Limited"
+      ],
+      "career_url": "https://www.delhivery.com/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "upGrad",
+      "aliases": [
+        "upGrad Education"
+      ],
+      "career_url": "https://www.upgrad.com/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Upstox",
+      "aliases": [
+        "RKSV Securities"
+      ],
+      "career_url": "https://upstox.com/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Angel One",
+      "aliases": [
+        "Angel Broking"
+      ],
+      "career_url": "https://www.angelone.in/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Info Edge",
+      "aliases": [
+        "Naukri",
+        "Info Edge India"
+      ],
+      "career_url": "https://www.infoedge.in/careers.html",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Zoho",
+      "aliases": [
+        "Zoho Corporation"
+      ],
+      "career_url": "https://www.zoho.com/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Groww",
+      "aliases": [
+        "Nextbillion Technology"
+      ],
+      "career_url": "https://groww.in/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Barclays",
+      "aliases": [
+        "Barclays Global Service Centre",
+        "Barclays Pune"
+      ],
+      "career_url": "https://search.jobs.barclays/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "HSBC",
+      "aliases": [
+        "HSBC Technology India",
+        "HSBC Software"
+      ],
+      "career_url": "https://www.hsbc.com/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Deutsche Bank",
+      "aliases": [
+        "DWS",
+        "Deutsche Bank Pune"
+      ],
+      "career_url": "https://careers.db.com/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "JPMorgan Chase",
+      "aliases": [
+        "J.P. Morgan",
+        "JPMorgan India"
+      ],
+      "career_url": "https://careers.jpmorgan.com/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Goldman Sachs",
+      "aliases": [
+        "Goldman Sachs India"
+      ],
+      "career_url": "https://www.goldmansachs.com/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Morgan Stanley",
+      "aliases": [
+        "Morgan Stanley India"
+      ],
+      "career_url": "https://www.morganstanley.com/about-us/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "BNY Mellon",
+      "aliases": [
+        "Bank of New York Mellon",
+        "BNY Pune"
+      ],
+      "career_url": "https://jobs.bnymellon.com/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Northern Trust",
+      "aliases": [
+        "Northern Trust Pune"
+      ],
+      "career_url": "https://www.northerntrust.com/united-states/about-us/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "State Street",
+      "aliases": [
+        "State Street Corporate Services"
+      ],
+      "career_url": "https://www.statestreet.com/careers.html",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Citi",
+      "aliases": [
+        "Citigroup",
+        "Citibank India",
+        "Citi Pune"
+      ],
+      "career_url": "https://careers.citigroup.com/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Standard Chartered",
+      "aliases": [
+        "StanChart",
+        "Standard Chartered GBS"
+      ],
+      "career_url": "https://www.sc.com/en/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "UBS",
+      "aliases": [
+        "UBS India",
+        "UBS Pune",
+        "Credit Suisse"
+      ],
+      "career_url": "https://www.ubs.com/global/en/careers.html",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Wells Fargo",
+      "aliases": [
+        "Wells Fargo India"
+      ],
+      "career_url": "https://www.wellsfargojobs.com/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Bank of America",
+      "aliases": [
+        "BofA",
+        "BA Continuum"
+      ],
+      "career_url": "https://careers.bankofamerica.com/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Nomura",
+      "aliases": [
+        "Nomura Services India"
+      ],
+      "career_url": "https://www.nomuragroup.com/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Mastercard",
+      "aliases": [
+        "Mastercard India",
+        "Mastercard Pune"
+      ],
+      "career_url": "https://mastercard.wd1.myworkdayjobs.com/CorporateCareers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "workday",
+      "ats_board_identifier": "mastercard",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://mastercard.wd1.myworkdayjobs.com/CorporateCareers"
+    },
+    {
+      "name": "ADP",
+      "aliases": [
+        "Automatic Data Processing",
+        "ADP Pune"
+      ],
+      "career_url": "https://jobs.adp.com/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "UKG",
+      "aliases": [
+        "Ultimate Kronos Group"
+      ],
+      "career_url": "https://www.ukg.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Amdocs",
+      "aliases": [
+        "Amdocs India",
+        "Amdocs Pune"
+      ],
+      "career_url": "https://www.amdocs.com/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "NiCE",
+      "aliases": [
+        "NICE Systems Pune"
+      ],
+      "career_url": "https://www.nice.com/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Workday",
+      "aliases": [
+        "Workday India"
+      ],
+      "career_url": "https://www.workday.com/en-us/company/careers.html",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "VOIS",
+      "aliases": [
+        "Vodafone Intelligent Solutions",
+        "_VOIS Pune"
+      ],
+      "career_url": "https://www.vodafone.com/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Allstate India",
+      "aliases": [
+        "Allstate Solutions Pune"
+      ],
+      "career_url": "https://www.allstate.jobs/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "UPS",
+      "aliases": [
+        "UPS India Technology Centre",
+        "UPS Pune"
+      ],
+      "career_url": "https://www.jobs-ups.com/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Springer Nature",
+      "aliases": [
+        "Springer Nature Pune"
+      ],
+      "career_url": "https://group.springernature.com/gp/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "BP",
+      "aliases": [
+        "British Petroleum",
+        "bp Pune"
+      ],
+      "career_url": "https://www.bp.com/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "AllianceBernstein",
+      "aliases": [
+        "AB Pune"
+      ],
+      "career_url": "https://www.alliancebernstein.com/corporate/en/careers.html",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Whirlpool",
+      "aliases": [
+        "Whirlpool of India",
+        "Whirlpool Pune"
+      ],
+      "career_url": "https://www.whirlpoolcareers.com/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Walmart Global Tech",
+      "aliases": [
+        "Walmart India",
+        "Walmart Labs"
+      ],
+      "career_url": "https://careers.walmart.com/technology",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "American Express",
+      "aliases": [
+        "Amex India"
+      ],
+      "career_url": "https://www.americanexpress.com/en-us/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Fidelity Investments",
+      "aliases": [
+        "FMR India"
+      ],
+      "career_url": "https://jobs.fidelity.com/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Charles Schwab",
+      "aliases": [
+        "Schwab India"
+      ],
+      "career_url": "https://jobs.schwabjobs.com/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Target India",
+      "aliases": [
+        "Target Corporation"
+      ],
+      "career_url": "https://corporate.target.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Micron Technology",
+      "aliases": [
+        "Micron India"
+      ],
+      "career_url": "https://www.micron.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "PayPal",
+      "aliases": [
+        "PayPal India"
+      ],
+      "career_url": "https://www.paypal.com/us/webapps/mpp/jobs",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Visa",
+      "aliases": [
+        "Visa India"
+      ],
+      "career_url": "https://www.visa.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Accenture",
+      "aliases": [
+        "Accenture India",
+        "Accenture Pune"
+      ],
+      "career_url": "https://www.accenture.com/in-en/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Infosys",
+      "aliases": [
+        "Infosys Limited",
+        "Infosys Pune"
+      ],
+      "career_url": "https://www.infosys.com/careers/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Wipro",
+      "aliases": [
+        "Wipro Limited",
+        "Wipro Pune"
+      ],
+      "career_url": "https://careers.wipro.com/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "TCS",
+      "aliases": [
+        "Tata Consultancy Services",
+        "TCS Pune"
+      ],
+      "career_url": "https://www.tcs.com/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Cognizant",
+      "aliases": [
+        "CTS",
+        "Cognizant Pune"
+      ],
+      "career_url": "https://careers.cognizant.com/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Tech Mahindra",
+      "aliases": [
+        "TechM",
+        "Tech Mahindra Pune"
+      ],
+      "career_url": "https://www.techmahindra.com/en-in/careers/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "HCLTech",
+      "aliases": [
+        "HCL Technologies"
+      ],
+      "career_url": "https://www.hcltech.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Mphasis",
+      "aliases": [
+        "Mphasis Pune"
+      ],
+      "career_url": "https://www.mphasis.com/home/careers.html",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "LTIMindtree",
+      "aliases": [
+        "LTI",
+        "Mindtree",
+        "LTIMindtree Pune"
+      ],
+      "career_url": "https://www.ltimindtree.com/careers/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Capgemini",
+      "aliases": [
+        "Capgemini India",
+        "Capgemini Pune"
+      ],
+      "career_url": "https://www.capgemini.com/in-en/careers/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "YASH Technologies",
+      "aliases": [
+        "YASH Pune"
+      ],
+      "career_url": "https://www.yash.com/careers/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Zensar Technologies",
+      "aliases": [
+        "Zensar Pune"
+      ],
+      "career_url": "https://www.zensar.com/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Synechron",
+      "aliases": [
+        "Synechron Pune"
+      ],
+      "career_url": "https://www.synechron.com/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Genpact",
+      "aliases": [
+        "Genpact India"
+      ],
+      "career_url": "https://www.genpact.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "EXL Service",
+      "aliases": [
+        "EXL Pune"
+      ],
+      "career_url": "https://www.exlservice.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Sopra Steria",
+      "aliases": [
+        "Sopra Steria India"
+      ],
+      "career_url": "https://www.soprasteria.in/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Publicis Sapient",
+      "aliases": [
+        "Publicis Sapient Pune"
+      ],
+      "career_url": "https://careers.publicissapient.com/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "EPAM Systems",
+      "aliases": [
+        "EPAM India",
+        "EPAM Pune"
+      ],
+      "career_url": "https://www.epam.com/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Globant",
+      "aliases": [
+        "Globant India",
+        "Globant Pune"
+      ],
+      "career_url": "https://www.globant.com/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Virtusa",
+      "aliases": [
+        "Virtusa Pune"
+      ],
+      "career_url": "https://www.virtusa.com/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Hexaware Technologies",
+      "aliases": [
+        "Hexaware Pune"
+      ],
+      "career_url": "https://hexaware.com/careers/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Coforge",
+      "aliases": [
+        "Coforge Limited",
+        "NIIT Technologies"
+      ],
+      "career_url": "https://www.coforge.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Sonata Software",
+      "aliases": [
+        "Sonata Software Limited"
+      ],
+      "career_url": "https://www.sonata-software.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Birlasoft",
+      "aliases": [
+        "Birlasoft Pune"
+      ],
+      "career_url": "https://www.birlasoft.com/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Cyient",
+      "aliases": [
+        "Cyient Pune"
+      ],
+      "career_url": "https://www.cyient.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "KPIT Technologies",
+      "aliases": [
+        "KPIT Pune"
+      ],
+      "career_url": "https://www.kpit.com/careers/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Deloitte",
+      "aliases": [
+        "Deloitte USI",
+        "Deloitte India",
+        "Deloitte Pune"
+      ],
+      "career_url": "https://www2.deloitte.com/in/en/pages/careers/careers.html",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "PwC",
+      "aliases": [
+        "PwC India",
+        "PwC SDC"
+      ],
+      "career_url": "https://www.pwc.in/careers.html",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "EY",
+      "aliases": [
+        "Ernst & Young",
+        "EY GDS"
+      ],
+      "career_url": "https://www.ey.com/en_in/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "KPMG",
+      "aliases": [
+        "KPMG India",
+        "KPMG Global Services"
+      ],
+      "career_url": "https://kpmg.com/in/en/home/careers.html",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "BMC Software",
+      "aliases": [
+        "BMC Software Pune"
+      ],
+      "career_url": "https://www.bmc.com/careers.html",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Veritas Technologies",
+      "aliases": [
+        "Veritas Pune"
+      ],
+      "career_url": "https://www.veritas.com/company/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Puppet",
+      "aliases": [
+        "Perforce Software"
+      ],
+      "career_url": "https://www.perforce.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Progress Software",
+      "aliases": [
+        "Progress Chef",
+        "Chef Software"
+      ],
+      "career_url": "https://www.progress.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Citrix",
+      "aliases": [
+        "Cloud Software Group",
+        "TIBCO Software"
+      ],
+      "career_url": "https://www.cloud.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Egnyte",
+      "aliases": [
+        "Egnyte India"
+      ],
+      "career_url": "https://www.egnyte.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Prudential",
+      "aliases": [
+        "Prudential Global Services",
+        "Prudential Pune"
+      ],
+      "career_url": "https://www.prudential.com/links/about/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "MetLife",
+      "aliases": [
+        "MetLife Global Operations"
+      ],
+      "career_url": "https://www.metlifecareers.com/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Allianz Technology",
+      "aliases": [
+        "Allianz Technology Pune"
+      ],
+      "career_url": "https://careers.allianz.com/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Zurich Insurance",
+      "aliases": [
+        "Zurich"
+      ],
+      "career_url": "https://www.zurich.com/en/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Aon",
+      "aliases": [
+        "Aon Hewitt"
+      ],
+      "career_url": "https://www.aon.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Marsh McLennan",
+      "aliases": [
+        "MMC Pune",
+        "Mercer"
+      ],
+      "career_url": "https://www.marshmclennan.com/careers.html",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Willis Towers Watson",
+      "aliases": [
+        "WTW"
+      ],
+      "career_url": "https://careers.wtwco.com/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Manulife",
+      "aliases": [
+        "John Hancock"
+      ],
+      "career_url": "https://www.manulife.com/en/careers.html",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "RBC",
+      "aliases": [
+        "Royal Bank of Canada"
+      ],
+      "career_url": "https://jobs.rbc.com/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Macquarie Group",
+      "aliases": [
+        "Macquarie India"
+      ],
+      "career_url": "https://www.macquarie.com/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "DBS Bank",
+      "aliases": [
+        "DBS Tech India"
+      ],
+      "career_url": "https://www.dbs.com/careers/default.page",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "CommBank",
+      "aliases": [
+        "Commonwealth Bank of Australia"
+      ],
+      "career_url": "https://www.commbank.com.au/about-us/careers.html",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "ANZ",
+      "aliases": [
+        "ANZ Bank India"
+      ],
+      "career_url": "https://www.anz.com/careers/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "John Deere",
+      "aliases": [
+        "John Deere India",
+        "John Deere Pune"
+      ],
+      "career_url": "https://www.deere.co.in/en/our-company/john-deere-careers/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Caterpillar",
+      "aliases": [
+        "CAT India"
+      ],
+      "career_url": "https://www.caterpillar.com/en/careers.html",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Boeing India",
+      "aliases": [
+        "Boeing"
+      ],
+      "career_url": "https://jobs.boeing.com/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Philips India",
+      "aliases": [
+        "Philips Healthcare Pune"
+      ],
+      "career_url": "https://www.careers.philips.com/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Siemens",
+      "aliases": [
+        "Siemens Pune",
+        "Siemens Digital Industries"
+      ],
+      "career_url": "https://www.siemens.com/global/en/company/jobs.html",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Bosch India",
+      "aliases": [
+        "Robert Bosch",
+        "Bosch Pune"
+      ],
+      "career_url": "https://www.bosch.in/careers/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Schneider Electric",
+      "aliases": [
+        "Schneider Electric India"
+      ],
+      "career_url": "https://www.se.com/in/en/about-us/careers/overview.jsp",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "ABB India",
+      "aliases": [
+        "ABB"
+      ],
+      "career_url": "https://global.abb/group/en/careers",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Honeywell",
+      "aliases": [
+        "Honeywell Technology Solutions"
+      ],
+      "career_url": "https://careers.honeywell.com/",
+      "pune_office": false,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "GE",
+      "aliases": [
+        "General Electric",
+        "GE Vernova",
+        "GE Aerospace"
+      ],
+      "career_url": "https://jobs.gecareers.com/",
+      "pune_office": false,
+      "ats_platform": "greenhouse",
+      "ats_board_identifier": "purestorage",
+      "direct_discovery_supported": true,
+      "ats_endpoint": "https://boards-api.greenhouse.io/v1/boards/purestorage/jobs"
+    },
+    {
+      "name": "Johnson Controls",
+      "aliases": [
+        "Johnson Controls Pune"
+      ],
+      "career_url": "https://www.johnsoncontrols.com/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Emerson",
+      "aliases": [
+        "Emerson Pune",
+        "Emerson Innovation Center"
+      ],
+      "career_url": "https://www.emerson.com/en-in/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Cotiviti",
+      "aliases": [
+        "Cotiviti Pune"
+      ],
+      "career_url": "https://www.cotiviti.com/careers",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Mindcrest",
+      "aliases": [
+        "Mindcrest Pune"
+      ],
+      "career_url": "https://mindcrest.com/careers/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Capstone Securities Analysis",
+      "aliases": [
+        "Capstone Securities Pune"
+      ],
+      "career_url": "https://www.capstonesecurities.com/careers.php",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Aptify Solutions",
+      "aliases": [
+        "Aptify Pune",
+        "Community Brands"
+      ],
+      "career_url": "https://www.communitybrands.com/careers/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Cloudaeon",
+      "aliases": [
+        "Cloudaeon Pvt Ltd Pune"
+      ],
+      "career_url": "https://cloudaeon.com/careers/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "Cloudaction",
+      "aliases": [
+        "Cloudaction Technology Pune"
+      ],
+      "career_url": "https://cloudaction.com/careers/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "LogiQuad Solutions",
+      "aliases": [
+        "LogiQuad Pune"
+      ],
+      "career_url": "https://logiquad.com/careers/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    },
+    {
+      "name": "The Linux Forge",
+      "aliases": [
+        "Linux Forge Inc"
+      ],
+      "career_url": "https://thelinuxforge.com/careers/",
+      "pune_hub": true,
+      "pune_office": true,
+      "ats_platform": "unverified_or_enterprise_portal",
+      "ats_board_identifier": null,
+      "direct_discovery_supported": false,
+      "ats_endpoint": null
+    }
+  ]
+}

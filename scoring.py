@@ -290,7 +290,9 @@ class JobScorer:
 
         # Check Remote
         if "remote" in arr_low or "remote" in loc_low or "work from home" in text or "anywhere" in loc_low or "worldwide" in loc_low:
-            if self.FOREIGN_REMOTE_PATTERN.search(loc_low) or self.FOREIGN_REMOTE_PATTERN.search(text):
+            has_foreign_country = bool(re.search(r"\b(united\s+states|usa|u\.s\.|canada|united\s+kingdom|uk|london|germany|poland|brazil|mexico|argentina|australia|singapore|ireland|california|san\s+francisco|san\s+jose|washington|seattle|new\s+york|texas|austin|chicago|bellevue)\b", loc_low))
+            has_india_or_global = bool(re.search(r"\b(india|pune|bangalore|bengaluru|hyderabad|worldwide|anywhere|global)\b", loc_low))
+            if self.FOREIGN_REMOTE_PATTERN.search(loc_low) or self.FOREIGN_REMOTE_PATTERN.search(text) or (has_foreign_country and not has_india_or_global):
                 return -40.0, "", f"Remote role restricted to region outside India ('{location}') (-40 pts)", True
             return 12.0, "Location match: Remote role accessible across India (+12 pts)", "", False
 

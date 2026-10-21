@@ -352,24 +352,27 @@ class TestMissingFieldsAndEdgeCases(unittest.TestCase):
         self.assertIn("restricted", res_us["potential_gaps"].lower())
 
     def test_liveness_check_conservative(self):
-        """404/410 marked Expired; 403/429 marked Unverified (Anti-Bot), never Expired."""
+        """404/410 marked Expired; 403/429 marked Blocked/login required, never Expired."""
         with patch("urllib.request.urlopen") as mock_url:
             # Test 200 OK
             mock_resp = MagicMock()
             mock_resp.status = 200
+            mock_resp.url = "https://example.com/job"
+            mock_resp.read.return_value = b"<html><body>Role is currently open and accepting applications</body></html>"
             mock_url.return_value.__enter__.return_value = mock_resp
             status = self.db.check_url_liveness("https://example.com/job")
-            self.assertEqual(status, "Active")
+            self.assertIn("Active", status)
 
             # Test 404 Not Found
             mock_url.side_effect = urllib.error.HTTPError("https://example.com/404", 404, "Not Found", {}, None)
             status_404 = self.db.check_url_liveness("https://example.com/404")
-            self.assertIn("Expired (404)", status_404)
+            self.assertIn("Expired", status_404)
+            self.assertIn("404", status_404)
 
             # Test 403 Forbidden (Anti-bot)
             mock_url.side_effect = urllib.error.HTTPError("https://example.com/403", 403, "Forbidden", {}, None)
             status_403 = self.db.check_url_liveness("https://example.com/403")
-            self.assertIn("Unverified", status_403)
+            self.assertIn("Blocked/login required", status_403)
             self.assertNotIn("Expired", status_403)
 
 
@@ -433,5 +436,319 @@ class TestMockedSourceConnectors(unittest.TestCase):
             self.assertIn("500", source.last_error)
 
 
+
+class TestScraperResilienceAndATSConnectors(unittest.TestCase):
+    """Verifies timeout resilience, retry logic, Workday/SmartRecruiters connectors, and liveness."""
+
+    def test_safe_http_client_incomplete_read_salvaged(self):
+        """IncompleteRead should have its partial data salvaged rather than failing."""
+        from sources import SafeHTTPClient
+        import http.client
+        with patch("urllib.request.urlopen") as mock_url:
+            mock_resp = MagicMock()
+            mock_resp.read.side_effect = http.client.IncompleteRead(b"partial content", 100)
+            mock_url.return_value.__enter__.return_value = mock_resp
+
+            data = SafeHTTPClient.fetch_url("https://example.com/test", timeout=3.0, max_retries=0)
+            self.assertEqual(data, b"partial content")
+
+    def test_safe_http_client_no_retry_on_404(self):
+        """HTTP 404 should fail immediately without retrying."""
+        from sources import SafeHTTPClient
+        with patch("urllib.request.urlopen") as mock_url:
+            mock_url.side_effect = urllib.error.HTTPError("https://example.com/404", 404, "Not Found", {}, None)
+            with self.assertRaises(urllib.error.HTTPError):
+                SafeHTTPClient.fetch_url("https://example.com/404", timeout=3.0, max_retries=2)
+            self.assertEqual(mock_url.call_count, 1)
+
+    def test_safe_http_client_transient_retry(self):
+        """HTTP 503 should trigger transient retry and succeed if subsequent attempt passes."""
+        from sources import SafeHTTPClient
+        with patch("urllib.request.urlopen") as mock_url:
+            mock_resp = MagicMock()
+            mock_resp.read.side_effect = [b'{"status": "ok"}', b""]
+            # Fail on attempt 1 with 503, succeed on attempt 2
+            mock_url.side_effect = [
+                urllib.error.HTTPError("https://example.com/503", 503, "Service Unavailable", {}, None),
+                MagicMock(__enter__=MagicMock(return_value=mock_resp), __exit__=MagicMock())
+            ]
+            data = SafeHTTPClient.fetch_url("https://example.com/retry", timeout=3.0, max_retries=1)
+            self.assertEqual(data, b'{"status": "ok"}')
+            self.assertEqual(mock_url.call_count, 2)
+
+    def test_workday_connector_parses_posted_today_and_url(self):
+        """Workday connector should correctly parse postedOn and externalPath."""
+        from sources import WorkdayPublicJobSource
+        source = WorkdayPublicJobSource(
+            [{"name": "Salesforce", "tenant": "salesforce", "site": "External_Career_Site", "endpoint": "https://example.com/workday"}],
+            "TestUA/1.0"
+        )
+        mock_payload = json.dumps({
+            "jobPostings": [
+                {
+                    "title": "Lead Cloud Infrastructure Engineer",
+                    "locationsText": "Pune, Maharashtra, India",
+                    "postedOn": "Posted Today",
+                    "externalPath": "/job/salesforce/lead-cloud-infra_12345"
+                }
+            ]
+        }).encode("utf-8")
+
+        with patch.object(source, "fetch_url", return_value=mock_payload):
+            jobs = source.fetch_jobs()
+            self.assertEqual(len(jobs), 1)
+            j = jobs[0]
+            self.assertEqual(j["job_title"], "Lead Cloud Infrastructure Engineer")
+            self.assertEqual(j["company"], "Salesforce")
+            self.assertEqual(j["date_confidence"], "Verified")
+            self.assertEqual(j["location"], "Pune, Maharashtra, India")
+            self.assertIn("lead-cloud-infra_12345", j["application_url"])
+
+    def test_smartrecruiters_connector_parses_released_date(self):
+        """SmartRecruiters connector should parse releasedDate and location."""
+        from sources import SmartRecruitersPublicJobSource
+        source = SmartRecruitersPublicJobSource(["colliers"], "TestUA/1.0")
+        mock_payload = json.dumps({
+            "content": [
+                {
+                    "name": "Cloud DevOps Administrator",
+                    "id": "sr-job-999",
+                    "releasedDate": "2026-10-21T06:00:00.000Z",
+                    "location": {"city": "Pune", "country": "India"}
+                }
+            ]
+        }).encode("utf-8")
+
+        with patch.object(source, "fetch_url", return_value=mock_payload):
+            jobs = source.fetch_jobs()
+            self.assertEqual(len(jobs), 1)
+            j = jobs[0]
+            self.assertEqual(j["job_title"], "Cloud DevOps Administrator")
+            self.assertEqual(j["company"], "Colliers")
+            self.assertEqual(j["date_confidence"], "Verified")
+            self.assertEqual(j["location"], "Pune, India")
+
+    def test_liveness_check_detects_closed_phrases_in_200_body(self):
+        """An HTTP 200 response containing 'position has been filled' must be labeled Expired/closed."""
+        temp_dir = tempfile.TemporaryDirectory()
+        db = JobDatabase(os.path.join(temp_dir.name, "test_live.db"))
+        try:
+            with patch("urllib.request.urlopen") as mock_url:
+                mock_resp = MagicMock()
+                mock_resp.status = 200
+                mock_resp.url = "https://example.com/jobs/devops"
+                mock_resp.read.return_value = b"<html><body>Sorry, this position has been filled. Thank you.</body></html>"
+                mock_url.return_value.__enter__.return_value = mock_resp
+
+                status = db.check_url_liveness("https://example.com/jobs/devops")
+                self.assertIn("Expired/closed", status)
+                self.assertIn("position has been filled", status)
+        finally:
+            temp_dir.cleanup()
+
+    def test_liveness_check_detects_redirect_to_search_page(self):
+        """A redirect to a generic /careers or /search page must be detected as Likely Expired."""
+        temp_dir = tempfile.TemporaryDirectory()
+        db = JobDatabase(os.path.join(temp_dir.name, "test_live.db"))
+        try:
+            with patch("urllib.request.urlopen") as mock_url:
+                mock_resp = MagicMock()
+                mock_resp.status = 200
+                mock_resp.url = "https://example.com/careers"
+                mock_resp.read.return_value = b"<html><body>Search all open jobs here</body></html>"
+                mock_url.return_value.__enter__.return_value = mock_resp
+
+                status = db.check_url_liveness("https://example.com/jobs/expired-role-123")
+                self.assertIn("Expired/closed", status)
+                self.assertIn("Redirected to search/home", status)
+        finally:
+            temp_dir.cleanup()
+
+    def test_dry_run_avoids_database_writes(self):
+        """Dry-run pipeline must evaluate jobs without writing records to jobs.db."""
+        from main import run_pipeline
+        temp_dir = tempfile.TemporaryDirectory()
+        test_db_path = os.path.join(temp_dir.name, "dry_run.db")
+        cfg = dict(TEST_CONFIG)
+        cfg["settings"] = {
+            "database_file": test_db_path,
+            "export_csv_file": os.path.join(temp_dir.name, "test.csv"),
+            "min_export_score": 40
+        }
+
+        with patch("sources.SourceManager.fetch_all") as mock_fetch:
+            mock_fetch.return_value = ([
+                {
+                    "job_title": "Junior DevOps Engineer",
+                    "company": "DryRun Tech",
+                    "location": "Pune",
+                    "work_arrangement": "Remote",
+                    "application_url": "https://dryrun.com/job1",
+                    "posting_date": datetime.now(timezone.utc).isoformat(),
+                    "date_confidence": "Verified"
+                }
+            ], [])
+            run_pipeline(cfg, dry_run=True)
+
+        db = JobDatabase(test_db_path)
+        self.assertEqual(len(db.get_jobs()), 0)
+        temp_dir.cleanup()
+
+
+
+class TestExcelJobExport(unittest.TestCase):
+    """Verifies Excel workbook generation, exact column order, formatting, deduplication, and edge cases."""
+
+    def setUp(self):
+        import openpyxl
+        self.temp_dir = tempfile.TemporaryDirectory()
+        from excel_export import ExcelJobExporter
+        self.exporter = ExcelJobExporter(output_dir=self.temp_dir.name)
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
+    def test_excel_empty_result_set(self):
+        """Exporting an empty list of jobs should create a valid workbook with headers and no rows."""
+        import openpyxl
+        path, count, dupes = self.exporter.export_jobs([])
+        self.assertTrue(os.path.exists(path))
+        self.assertEqual(count, 0)
+        self.assertEqual(dupes, 0)
+
+        wb = openpyxl.load_workbook(path)
+        ws = wb.active
+        self.assertEqual(ws.max_row, 1)
+        headers = [c.value for c in ws[1]]
+        self.assertEqual(headers, [
+            "#", "Company", "Job Location", "Date Posted", "Job Role", "Careers Page", "LinkedIn / Company URL"
+        ])
+        self.assertEqual(ws.freeze_panes, "A2")
+
+    def test_excel_columns_and_row_data(self):
+        """Exported jobs must match the required column structure and row indexing."""
+        import openpyxl
+        sample_jobs = [
+            {
+                "job_title": "Junior Cloud Support Engineer",
+                "company": "Salesforce",
+                "location": "Pune, India",
+                "posting_date": "2026-10-21T06:00:00Z",
+                "date_confidence": "Verified",
+                "application_url": "https://salesforce.com/job123"
+            }
+        ]
+        path, count, dupes = self.exporter.export_jobs(sample_jobs)
+        self.assertEqual(count, 1)
+        wb = openpyxl.load_workbook(path)
+        ws = wb.active
+
+        self.assertEqual(ws.max_row, 2)
+        row_vals = [c.value for c in ws[2]]
+        self.assertEqual(row_vals[0], 1)                        # #
+        self.assertEqual(row_vals[1], "Salesforce")              # Company
+        self.assertEqual(row_vals[2], "Pune, India")             # Job Location
+        self.assertEqual(row_vals[3], "2026-10-21")              # Date Posted
+        self.assertEqual(row_vals[4], "Junior Cloud Support Engineer") # Job Role
+        self.assertEqual(row_vals[5], "https://salesforce.com/job123") # Careers Page
+        self.assertEqual(row_vals[6], "https://careers.salesforce.com/") # LinkedIn / Company URL (from company_targets)
+
+    def test_excel_hyperlinks_attached(self):
+        """Careers page and company URLs must have valid clickable hyperlinks."""
+        import openpyxl
+        sample_jobs = [
+            {
+                "job_title": "DevOps Engineer",
+                "company": "Mastercard",
+                "location": "Pune",
+                "posting_date": "2026-10-20T12:00:00Z",
+                "date_confidence": "Verified",
+                "application_url": "https://mastercard.com/careers/job99"
+            }
+        ]
+        path, _, _ = self.exporter.export_jobs(sample_jobs)
+        wb = openpyxl.load_workbook(path)
+        ws = wb.active
+
+        careers_cell = ws.cell(row=2, column=6)
+        self.assertIsNotNone(careers_cell.hyperlink)
+        self.assertEqual(careers_cell.hyperlink.target, "https://mastercard.com/careers/job99")
+
+        company_cell = ws.cell(row=2, column=7)
+        self.assertIsNotNone(company_cell.hyperlink)
+        self.assertTrue("mastercard" in company_cell.hyperlink.target.lower())
+
+    def test_excel_empty_fields_leave_cells_blank(self):
+        """Missing or unknown fields must produce empty cells rather than invented data."""
+        import openpyxl
+        sparse_job = [
+            {
+                "job_title": "Trainee Systems Engineer",
+                "company": "Unknown",
+                "location": "Unknown",
+                "posting_date": "Unknown",
+                "date_confidence": "Unknown",
+                "application_url": ""
+            }
+        ]
+        path, _, _ = self.exporter.export_jobs(sparse_job)
+        wb = openpyxl.load_workbook(path)
+        ws = wb.active
+
+        # Row 2 values
+        c_comp = ws.cell(row=2, column=2).value
+        c_loc = ws.cell(row=2, column=3).value
+        c_date = ws.cell(row=2, column=4).value
+        c_apply = ws.cell(row=2, column=6).value
+        c_company_url = ws.cell(row=2, column=7).value
+
+        self.assertTrue(c_comp is None or c_comp == "")
+        self.assertTrue(c_loc is None or c_loc == "")
+        self.assertTrue(c_date is None or c_date == "")
+        self.assertTrue(c_apply is None or c_apply == "")
+        self.assertTrue(c_company_url is None or c_company_url == "")
+        self.assertIsNone(ws.cell(row=2, column=6).hyperlink)
+
+    def test_excel_deduplication_removes_tracking_params(self):
+        """Equivalent URLs with tracking parameters must be deduplicated to a single record."""
+        from excel_export import deduplicate_jobs
+        jobs = [
+            {"job_title": "DevOps Engineer", "company": "Acme", "application_url": "https://example.com/job?utm_source=linkedin&trk=123"},
+            {"job_title": "DevOps Engineer", "company": "Acme", "application_url": "https://example.com/job"},
+            {"job_title": "DevOps Engineer", "company": "Acme", "application_url": "https://example.com/job#apply-section"}
+        ]
+        deduped, removed = deduplicate_jobs(jobs)
+        self.assertEqual(len(deduped), 1)
+        self.assertEqual(removed, 2)
+
+    def test_excel_deduplication_preserves_unrelated_jobs_without_url(self):
+        """Unrelated jobs missing application URLs must not be merged."""
+        from excel_export import deduplicate_jobs
+        jobs = [
+            {"job_title": "AWS Cloud Intern", "company": "Alpha Corp", "application_url": ""},
+            {"job_title": "Kubernetes Trainee", "company": "Beta Corp", "application_url": ""},
+            {"job_title": "AWS Cloud Intern", "company": "Alpha Corp", "application_url": ""} # duplicate
+        ]
+        deduped, removed = deduplicate_jobs(jobs)
+        self.assertEqual(len(deduped), 2)
+        self.assertEqual(removed, 1)
+
+    def test_excel_date_sorting_newest_first(self):
+        """Jobs with valid dates must be sorted newest first."""
+        from excel_export import sort_jobs_by_date
+        jobs = [
+            {"job_title": "Job Old", "posting_date": "2026-10-18T10:00:00Z"},
+            {"job_title": "Job Newest", "posting_date": "2026-10-21T12:00:00Z"},
+            {"job_title": "Job Middle", "posting_date": "2026-10-20T08:00:00Z"},
+            {"job_title": "Job Undated", "posting_date": "Unknown"}
+        ]
+        sorted_j = sort_jobs_by_date(jobs)
+        self.assertEqual(sorted_j[0]["job_title"], "Job Newest")
+        self.assertEqual(sorted_j[1]["job_title"], "Job Middle")
+        self.assertEqual(sorted_j[2]["job_title"], "Job Old")
+        self.assertEqual(sorted_j[3]["job_title"], "Job Undated")
+
+
 if __name__ == "__main__":
     unittest.main()
+
