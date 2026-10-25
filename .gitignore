@@ -1,6 +1,41 @@
-/backup-before-recruiter-discovery/
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*$py.class
+
+# Testing & Caches
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual Environments
 .venv/
 venv/
+env/
+ENV/
+
+# Environment Variables & Local Secrets
 .env
+.env.*
+
+# Backups & Temporary Scratch Files
+/backup-before-recruiter-discovery/
+*.bak
+*.tmp
+*.temp
+
+# Local SQLite Locks & Journal Files
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Dynamic Output Reports & Recruiter Exports
+# (Tracked historical reports and databases remain preserved)
+output/*.xlsx
+!output/jobs_2026-10-21_16-00.xlsx
+!output/jobs_2026-10-21_16-01.xlsx
+!output/jobs_2026-10-22_14-05.xlsx
+!output/jobs_2026-10-23_16-28.xlsx
+devops_recruiters.csv
+recruiter_search_links.md
+
