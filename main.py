@@ -322,41 +322,101 @@ def run_pipeline(
             else:
                 updated_count += 1
 
-    # Filter matching vacancies based on candidate criteria
-    filtered_jobs = []
-    for j in scored_jobs:
-        if j.get("match_score", 0.0) < min_score:
-            continue
-        if strict and j.get("date_confidence") != "Verified":
-            continue
-        h_ago = j.get("hours_ago")
-        if max_days is not None:
-            if h_ago is None or h_ago > (max_days * 24.0):
-                continue
-        if pune_remote:
-            loc_low = (j.get("location") or "").lower()
-            arr_low = (j.get("work_arrangement") or "").lower()
-            raw_low = (j.get("raw_snippet") or "").lower()
-            is_pune = "pune" in loc_low or "pune" in raw_low
-            is_remote = "remote" in arr_low or "remote" in loc_low or "work from home" in raw_low or "anywhere" in loc_low or "worldwide" in loc_low
-            has_foreign = bool(re.search(r"\b(united\s+states|usa|u\.s\.|canada|united\s+kingdom|uk|london|germany|poland|brazil|mexico|argentina|australia|singapore|ireland|california|san\s+francisco|san\s+jose|washington|seattle|new\s+york|texas|austin|chicago|bellevue)\b", loc_low))
-            has_india_global = bool(re.search(r"\b(india|pune|bangalore|bengaluru|hyderabad|worldwide|anywhere|global)\b", loc_low))
-            foreign_restricted = bool(FOREIGN_REMOTE_PATTERN.search(loc_low) or FOREIGN_REMOTE_PATTERN.search(raw_low) or (has_foreign and not has_india_global))
-            if not (is_pune or (is_remote and not foreign_restricted)):
-                continue
+    # 1. Categorize Discovered Listings into Verified, Leads, and Rejected
+    verified_jobs = []
+    unverified_leads = []
+    rejected_jobs = []
 
-        filtered_jobs.append(j)
+    rejection_reasons_count: Dict[str, int] = {}
+    rejection_sources_count: Dict[str, int] = {}
+
+    for j in scored_jobs:
+        score = j.get("match_score", 0.0)
+        h_ago = j.get("hours_ago")
+        d_conf = (j.get("date_confidence") or "Unknown").strip()
+        loc_low = (j.get("location") or "").lower()
+        arr_low = (j.get("work_arrangement") or "").lower()
+        raw_low = (j.get("raw_snippet") or "").lower()
+        src_name = j.get("source_name") or "Unknown"
+
+        is_pune = "pune" in loc_low or "pune" in raw_low
+        is_remote = "remote" in arr_low or "remote" in loc_low or "work from home" in raw_low or "anywhere" in loc_low or "worldwide" in loc_low
+        has_foreign = bool(re.search(r"\b(united\s+states|usa|u\.s\.|canada|united\s+kingdom|uk|london|germany|poland|brazil|mexico|argentina|australia|singapore|ireland|california|san\s+francisco|san\s+jose|washington|seattle|new\s+york|texas|austin|chicago|bellevue)\b", loc_low))
+        has_india_global = bool(re.search(r"\b(india|pune|bangalore|bengaluru|hyderabad|worldwide|anywhere|global)\b", loc_low))
+        foreign_restricted = bool(FOREIGN_REMOTE_PATTERN.search(loc_low) or FOREIGN_REMOTE_PATTERN.search(raw_low) or (has_foreign and not has_india_global))
+
+        gaps = (j.get("potential_gaps") or "").lower()
+        reasons = (j.get("match_reasons") or "").lower()
+
+        is_senior_disqualified = (score == 0.0 and ("senior" in gaps or "exceeds" in gaps or "senior" in reasons))
+        is_location_rejected = pune_remote and not (is_pune or (is_remote and not foreign_restricted))
+        is_score_rejected = (score < min_score)
+        is_age_rejected = (max_days is not None and h_ago is not None and h_ago > (max_days * 24.0))
+
+        if is_senior_disqualified:
+            reason = "Senior / Lead (5+ years exp disqualified)"
+            j["rejection_reason"] = reason
+            rejected_jobs.append(j)
+            rejection_reasons_count[reason] = rejection_reasons_count.get(reason, 0) + 1
+            rejection_sources_count[src_name] = rejection_sources_count.get(src_name, 0) + 1
+        elif is_location_rejected:
+            reason = "Foreign Location / Restricted Remote"
+            j["rejection_reason"] = reason
+            rejected_jobs.append(j)
+            rejection_reasons_count[reason] = rejection_reasons_count.get(reason, 0) + 1
+            rejection_sources_count[src_name] = rejection_sources_count.get(src_name, 0) + 1
+        elif is_score_rejected:
+            reason = f"Score Below Threshold ({score:.1f} < {min_score})"
+            j["rejection_reason"] = reason
+            rejected_jobs.append(j)
+            rejection_reasons_count[reason] = rejection_reasons_count.get(reason, 0) + 1
+            rejection_sources_count[src_name] = rejection_sources_count.get(src_name, 0) + 1
+        elif is_age_rejected:
+            reason = f"Posting Age Exceeded ({h_ago/24.0:.1f}d > {max_days}d)"
+            j["rejection_reason"] = reason
+            rejected_jobs.append(j)
+            rejection_reasons_count[reason] = rejection_reasons_count.get(reason, 0) + 1
+            rejection_sources_count[src_name] = rejection_sources_count.get(src_name, 0) + 1
+        else:
+            if d_conf in ("Verified", "Listing Updated") and (h_ago is not None if max_days is not None else True):
+                verified_jobs.append(j)
+            elif strict:
+                reason = "Unverified Date (Strict Mode Active)"
+                j["rejection_reason"] = reason
+                rejected_jobs.append(j)
+                rejection_reasons_count[reason] = rejection_reasons_count.get(reason, 0) + 1
+                rejection_sources_count[src_name] = rejection_sources_count.get(src_name, 0) + 1
+            else:
+                unverified_leads.append(j)
+
+    filtered_jobs = verified_jobs + unverified_leads
 
     if diagnostic:
         print_diagnostic_report(raw_jobs, scored_jobs, max_days, pune_remote, db=db)
 
-    # Export to Excel Workbook
+    # Export to Multi-Tab Excel Workbook
+    summary_stats = {
+        "total_fetched": total_fetched,
+        "dupes_removed": dupes_removed,
+        "total_unique": len(deduped_raw_jobs),
+        "verified_count": len(verified_jobs),
+        "leads_count": len(unverified_leads),
+        "rejected_count": len(rejected_jobs)
+    }
+
     excel_exporter = ExcelJobExporter(output_dir=BASE_DIR / "output")
     excel_path = None
     exported_cnt = 0
 
     if not dry_run:
-        excel_path, exported_cnt, _ = excel_exporter.export_jobs(filtered_jobs, deduplicate=False)
+        excel_path, exported_cnt, _ = excel_exporter.export_categorized_jobs(
+            verified_jobs=verified_jobs,
+            leads=unverified_leads,
+            rejected=rejected_jobs,
+            source_report=report,
+            summary_stats=summary_stats,
+            deduplicate=False
+        )
         # Update backward-compatible CSV exports and search links
         db.export_to_csv(
             str(csv_file),
@@ -375,7 +435,7 @@ def run_pipeline(
         generate_search_links_doc(links_file)
     else:
         excel_path = excel_exporter.generate_filepath()
-        exported_cnt = len(filtered_jobs)
+        exported_cnt = len(verified_jobs)
 
     # Collect source failure warnings
     source_warnings = []
@@ -384,22 +444,37 @@ def run_pipeline(
             err_msg = r.get("error") or r.get("status")
             source_warnings.append(f"{r['source']} ({err_msg})")
 
-    # Concise Terminal Summary
-    print("\n" + "=" * 68)
-    print("  SCAN SUMMARY & EXCEL REPORT")
-    print("=" * 68)
-    print(f"Total jobs fetched:             {total_fetched}")
-    print(f"Duplicate jobs removed:         {dupes_removed}")
-    print(f"Jobs remaining after filtering: {len(filtered_jobs)}")
-    print(f"Number of jobs exported:        {exported_cnt}")
+    # Comprehensive Terminal Summary with Filtering Funnel Audit (Task 9)
+    print("\n" + "=" * 76)
+    print("  SCAN & FILTERING FUNNEL AUDIT")
+    print("=" * 76)
+    print(f"Total listings fetched:            {total_fetched}")
+    print(f"Duplicate listings removed:        {dupes_removed}")
+    print(f"Unique vacancies evaluated:        {len(deduped_raw_jobs)}")
+    print("-" * 76)
+    print("Qualified Opportunity Breakdown:")
+    print(f"  [+] Sheet 1: Verified Opportunities (0-3y, Pune/Remote): {len(verified_jobs)}")
+    print(f"  [?] Sheet 2: Unverified Leads (Score >= 40):            {len(unverified_leads)}")
+    print(f"  [-] Sheet 3: Disqualified & Excluded Listings:          {len(rejected_jobs)}")
+    print("-" * 76)
+    print("Rejection Breakdown by Reason (Excluded Listings):")
+    for r_reason, r_count in sorted(rejection_reasons_count.items(), key=lambda x: x[1], reverse=True):
+        pct = (r_count / len(rejected_jobs) * 100.0) if rejected_jobs else 0.0
+        print(f"  * {r_reason:<45}: {r_count:>4} ({pct:>5.1f}%)")
+    print("-" * 76)
+    print("Rejection Breakdown by Source:")
+    for s_name, s_count in sorted(rejection_sources_count.items(), key=lambda x: x[1], reverse=True):
+        print(f"  * {s_name:<45}: {s_count:>4}")
+    print("-" * 76)
     if dry_run:
-        print(f"Excel destination (Dry-Run):    {excel_path}")
+        print(f"Excel destination (Dry-Run):       {excel_path}")
         print("[DRY RUN] Evaluated jobs. Database writes skipped.")
     else:
-        print(f"Excel report saved:             {excel_path}")
+        print(f"Excel report saved:                {excel_path}")
+        print(f"  (Sheets: Verified Opportunities, Unverified Leads, Rejected, Source Health)")
     if source_warnings:
-        print(f"Source warnings:                {'; '.join(source_warnings[:2])}")
-    print("=" * 68 + "\n")
+        print(f"Source warnings:                   {'; '.join(source_warnings[:2])}")
+    print("=" * 76 + "\n")
 
     # Only print full card details in terminal if explicitly requested
     if output_format == "terminal" or top_n is not None:

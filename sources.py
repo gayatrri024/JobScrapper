@@ -40,7 +40,9 @@ socket.setdefaulttimeout(10.0)
 DEVOPS_ROLE_KEYWORDS = [
     "devops", "cloud", "infrastructure", "sre", "platform", "kubernetes",
     "systems", "linux", "aws", "terraform", "reliability", "cloud support",
-    "cloud administrator", "site reliability", "cloud operations", "automation"
+    "cloud administrator", "site reliability", "cloud operations", "automation",
+    "sysadmin", "system administrator", "systems engineer", "build and release",
+    "release engineer", "ci/cd", "cloud systems"
 ]
 
 AGGREGATOR_PATTERNS = [
@@ -58,7 +60,7 @@ AGGREGATOR_PATTERNS = [
 
 
 class SafeHTTPClient:
-    """HTTP client with bounded connection, chunked read deadlines, and transient retry."""
+    """HTTP client with bounded connection, chunked read deadlines, exponential backoff, and transient retry."""
 
     @staticmethod
     def fetch_url(
@@ -68,7 +70,7 @@ class SafeHTTPClient:
         headers: Optional[Dict[str, str]] = None,
         timeout: float = 8.0,
         max_bytes: int = 5 * 1024 * 1024,
-        max_retries: int = 1
+        max_retries: int = 2
     ) -> bytes:
         default_headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
@@ -116,17 +118,28 @@ class SafeHTTPClient:
                     return b"".join(chunks)
 
             except urllib.error.HTTPError as e:
-                # Retry only transient server errors (502, 503, 504)
-                if e.code in [502, 503, 504] and attempts <= max_retries:
-                    time.sleep(1.0)
+                # Retry transient server errors (500, 502, 503, 504) and rate limits (429)
+                if e.code in [429, 500, 502, 503, 504] and attempts <= max_retries:
+                    retry_after = e.headers.get("Retry-After") if e.headers else None
+                    if retry_after and retry_after.isdigit():
+                        sleep_sec = min(float(retry_after), 4.0)
+                    else:
+                        sleep_sec = min(0.6 * (1.5 ** (attempts - 1)), 3.0)
+                    logger.debug(f"HTTP {e.code} for {url}. Retrying in {sleep_sec:.1f}s (attempt {attempts}/{max_retries})...")
+                    time.sleep(sleep_sec)
                     continue
                 raise
-            except ConnectionResetError as e:
+            except ConnectionResetError:
                 if attempts <= max_retries:
-                    time.sleep(1.0)
+                    time.sleep(min(0.5 * (1.5 ** (attempts - 1)), 2.5))
                     continue
                 raise
-            except (urllib.error.URLError, socket.timeout, TimeoutError) as e:
+            except (socket.timeout, TimeoutError, urllib.error.URLError) as e:
+                if attempts <= max_retries:
+                    sleep_sec = min(0.6 * (1.5 ** (attempts - 1)), 2.5)
+                    logger.debug(f"Transient error ({type(e).__name__}) for {url}. Retrying in {sleep_sec:.1f}s (attempt {attempts}/{max_retries})...")
+                    time.sleep(sleep_sec)
+                    continue
                 raise
 
 
@@ -193,11 +206,14 @@ class GreenhousePublicJobSource(BaseSource):
                     updated_at = j.get("updated_at") or "Unknown"
                     content_text = re.sub(r"<[^>]+>", " ", j.get("content", "")).strip()
 
+                    loc_check = (location_name + " " + title).lower()
+                    is_remote_job = any(r in loc_check for r in ["remote", "home based", "worldwide", "anywhere", "virtual", "telecommute"])
+
                     jobs.append({
                         "job_title": title,
                         "company": board.title(),
                         "location": location_name,
-                        "work_arrangement": "Remote" if "remote" in location_name.lower() else "Unknown",
+                        "work_arrangement": "Remote" if is_remote_job else ("Onsite" if location_name != "Unknown" else "Unknown"),
                         "application_url": app_url,
                         "source_url": app_url,
                         "canonical_application_url": app_url,
@@ -235,6 +251,8 @@ class LeverPublicJobSource(BaseSource):
                 logger.warning(f"Lever connector reached time budget ({self.time_budget}s). Finishing with {len(jobs)} jobs.")
                 break
 
+            # Gentle pacing between company queries to prevent 429 throttling
+            time.sleep(0.2)
             url = f"https://api.lever.co/v0/postings/{company}?mode=json"
             try:
                 content = self.fetch_url(url)
@@ -268,12 +286,14 @@ class LeverPublicJobSource(BaseSource):
 
                     desc_plain = p.get("descriptionPlain", "") or ""
                     snippet = f"{title} at {company.title()} in {loc}. {desc_plain[:500]}"
+                    loc_check = (workplace + " " + loc + " " + title).lower()
+                    is_remote_job = any(r in loc_check for r in ["remote", "home", "worldwide", "anywhere", "virtual", "telecommute"])
 
                     jobs.append({
                         "job_title": title,
                         "company": company.title(),
                         "location": loc,
-                        "work_arrangement": "Remote" if "remote" in workplace.lower() or "remote" in loc.lower() else "Onsite",
+                        "work_arrangement": "Remote" if is_remote_job else ("Onsite" if loc != "Unknown" else "Unknown"),
                         "application_url": apply_url,
                         "source_url": hosted_url,
                         "canonical_application_url": apply_url,
@@ -333,12 +353,14 @@ class AshbyPublicJobSource(BaseSource):
 
                     desc = j.get("descriptionPlain", "") or ""
                     snippet = f"{title} at {company.title()} in {loc}. {desc[:500]}"
+                    loc_check = (loc + " " + title).lower()
+                    is_remote_job = is_remote or any(r in loc_check for r in ["remote", "home", "worldwide", "anywhere", "virtual", "telecommute"])
 
                     jobs.append({
                         "job_title": title,
                         "company": company.title(),
                         "location": loc,
-                        "work_arrangement": "Remote" if is_remote or "remote" in loc.lower() else "Onsite",
+                        "work_arrangement": "Remote" if is_remote_job else ("Onsite" if loc != "Unknown" else "Unknown"),
                         "application_url": apply_url,
                         "source_url": job_url,
                         "canonical_application_url": apply_url,
@@ -781,15 +803,30 @@ class GoogleNewsJobSource(BaseSource):
         location = "Unknown"
         work_arrangement = "Unknown"
 
+        KNOWN_CITIES = {"pune", "bengaluru", "bangalore", "mumbai", "hyderabad", "chennai", "delhi", "noida", "gurgaon", "gurugram", "india"}
+
         if " - " in title:
-            parts = title.rsplit(" - ", 1)
-            title = parts[0].strip()
-            if source_publisher == "Google News":
-                source_publisher = parts[1].strip()
+            parts = [p.strip() for p in title.split(" - ")]
+            if len(parts) >= 3:
+                title = parts[0]
+                if parts[1].lower() not in KNOWN_CITIES:
+                    company = parts[1]
+                if parts[2].lower() in KNOWN_CITIES and location == "Unknown":
+                    location = f"{parts[2].title()}, India" if parts[2].lower() != "india" else "India"
+            elif len(parts) == 2:
+                title = parts[0]
+                if parts[1].lower() in KNOWN_CITIES:
+                    if location == "Unknown":
+                        location = f"{parts[1].title()}, India" if parts[1].lower() != "india" else "India"
+                    company = "Unknown"
+                else:
+                    company = parts[1]
 
         hiring_match = re.match(r"^(.*?)\s+hiring\s+(.*?)(?:\s*\|\s*(.*?))?(?:\s*\|\s*in\s+(.*?))?$", title, re.IGNORECASE)
         if hiring_match:
-            company = hiring_match.group(1).strip()
+            c_cand = hiring_match.group(1).strip()
+            if c_cand.lower() not in KNOWN_CITIES:
+                company = c_cand
             title = hiring_match.group(2).strip()
             extra = (hiring_match.group(3) or "").strip()
             loc_extra = (hiring_match.group(4) or "").strip()
@@ -801,11 +838,20 @@ class GoogleNewsJobSource(BaseSource):
                 
             if loc_extra:
                 location = loc_extra
-        elif " - " in title:
-            parts = [p.strip() for p in title.split(" - ")]
-            if len(parts) >= 2:
-                title = parts[0]
-                company = parts[1]
+
+        # Fallback extraction of company if still Unknown or city
+        if company == "Unknown" or company.lower() in KNOWN_CITIES:
+            m_hire = re.search(r"\b([A-Za-z0-9&.\s]{2,35})\s+hiring\b", clean_desc, re.IGNORECASE)
+            if m_hire:
+                cand = m_hire.group(1).strip()
+                if cand.lower() not in KNOWN_CITIES and not any(w in cand.lower() for w in ["linkedin", "naukri", "we are"]):
+                    company = cand
+            elif " at " in title.lower():
+                m_at = re.search(r"\bat\s+([A-Za-z0-9&.\s]{2,35})\b", title, re.IGNORECASE)
+                if m_at:
+                    cand = m_at.group(1).strip()
+                    if cand.lower() not in KNOWN_CITIES:
+                        company = cand
 
         combined_text = f"{title} {clean_desc}".lower()
         if work_arrangement == "Unknown":

@@ -39,6 +39,19 @@ FOREIGN_REMOTE_PATTERN = re.compile(
 )
 
 
+def is_direct_employer_url(url: str) -> bool:
+    """Returns True if the URL is a direct employer application or careers portal link rather than a news aggregator redirect."""
+    if not url or url.strip() == "" or url.lower() in ["unknown", "none"]:
+        return False
+    u = url.strip().lower()
+    if u.startswith("synthetic://"):
+        return False
+    if any(agg in u for agg in ["news.google.com", "google.com/url", "google.com/rss"]):
+        return False
+    return True
+
+
+
 def normalize_url(url: str) -> str:
     """
     Normalizes a job URL by lowercasing scheme/host, removing tracking parameters,
@@ -313,16 +326,45 @@ class JobDatabase:
             cursor = conn.cursor()
             
             # Check primary match by normalized URL
-            cursor.execute("SELECT id, status, notes FROM jobs WHERE normalized_url = ?", (clean_url,))
+            cursor.execute("SELECT id, status, notes, application_url, canonical_application_url, posting_date, date_confidence, posting_date_evidence, source_name FROM jobs WHERE normalized_url = ?", (clean_url,))
             existing = cursor.fetchone()
 
             # Check secondary match by dedup hash
             if not existing and dedup_hash:
-                cursor.execute("SELECT id, status, notes FROM jobs WHERE dedup_hash = ?", (dedup_hash,))
+                cursor.execute("SELECT id, status, notes, application_url, canonical_application_url, posting_date, date_confidence, posting_date_evidence, source_name FROM jobs WHERE dedup_hash = ?", (dedup_hash,))
                 existing = cursor.fetchone()
 
             if existing:
                 existing_id = existing["id"]
+                existing_app_url = existing["application_url"] or ""
+                existing_canonical_url = existing["canonical_application_url"] or ""
+                existing_posting_date = existing["posting_date"] or "Unknown"
+                existing_confidence = existing["date_confidence"] or "Unknown"
+
+                # Direct employer URLs are preferred over aggregator URLs
+                new_app_url = raw_app_url
+                new_canonical_url = job_data.get("canonical_application_url") or ""
+                if is_direct_employer_url(existing_app_url) and not is_direct_employer_url(new_app_url):
+                    final_app_url = existing_app_url
+                    final_canonical_url = existing_canonical_url or final_app_url
+                else:
+                    final_app_url = new_app_url or existing_app_url
+                    final_canonical_url = new_canonical_url or existing_canonical_url or final_app_url
+
+                # Date preservation: never downgrade verified date to Unknown/Unverified
+                high_conf = {"verified", "listing updated", "high", "medium"}
+                in_conf = (job_data.get("date_confidence") or "Unknown").strip().lower()
+                ex_conf = existing_confidence.strip().lower()
+
+                if ex_conf in high_conf and in_conf not in high_conf:
+                    final_posting_date = existing_posting_date
+                    final_date_confidence = existing_confidence
+                    final_date_evidence = existing["posting_date_evidence"] if "posting_date_evidence" in existing.keys() else (job_data.get("posting_date_evidence") or "")
+                else:
+                    final_posting_date = job_data.get("posting_date") or existing_posting_date
+                    final_date_confidence = job_data.get("date_confidence") or existing_confidence
+                    final_date_evidence = job_data.get("posting_date_evidence") or ""
+
                 cursor.execute("""
                     UPDATE jobs SET
                         last_seen_date = ?,
@@ -335,6 +377,7 @@ class JobDatabase:
                         experience_required = ?,
                         experience_evidence = ?,
                         posting_date_evidence = ?,
+                        application_url = ?,
                         canonical_application_url = ?,
                         last_checked_date = ?
                     WHERE id = ?
@@ -344,12 +387,13 @@ class JobDatabase:
                     job_data.get("priority") or "Low",
                     job_data.get("match_reasons") or "",
                     job_data.get("potential_gaps") or "",
-                    job_data.get("posting_date") or "Unknown",
-                    job_data.get("date_confidence") or "Unknown",
+                    final_posting_date,
+                    final_date_confidence,
                     job_data.get("experience_required") or "Unknown",
                     job_data.get("experience_evidence") or "",
-                    job_data.get("posting_date_evidence") or "",
-                    job_data.get("canonical_application_url") or "",
+                    final_date_evidence,
+                    final_app_url,
+                    final_canonical_url,
                     now_iso,
                     existing_id
                 ))

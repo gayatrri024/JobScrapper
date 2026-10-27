@@ -200,23 +200,40 @@ class JobScorer:
     def _score_role(self, title: str) -> Tuple[float, str, str]:
         t_low = title.lower()
 
+        # Check configured target roles first
+        for target in self.target_roles:
+            if target and target in t_low:
+                return 25.0, f"Target role match: '{title}' matches candidate target domain (+25 pts)", ""
+
         prime_targets = [
             "junior devops engineer", "jr devops", "devops engineer",
             "cloud engineer", "cloud support engineer", "cloud administrator",
-            "kubernetes engineer", "infrastructure engineer",
-            "junior site reliability engineer", "junior sre", "entry level sre",
-            "platform engineer", "systems engineer", "aws support engineer"
+            "cloud systems engineer", "cloud operations engineer", "aws engineer",
+            "aws cloud support", "aws support engineer", "kubernetes engineer",
+            "infrastructure engineer", "infrastructure automation", "platform engineer",
+            "site reliability engineer", "site reliability", "junior site reliability engineer",
+            "junior sre", "entry level sre", "systems engineer", "system administrator",
+            "linux engineer", "linux administrator", "build and release engineer",
+            "release engineer", "ci/cd engineer", "devops intern", "cloud intern",
+            "devops trainee", "cloud trainee", "cloud associate"
         ]
         for role in prime_targets:
             if role in t_low:
                 return 25.0, f"Target role match: '{title}' matches candidate target domain (+25 pts)", ""
 
-        secondary_keywords = ["devops", "cloud", "infrastructure", "sre", "platform", "kubernetes", "systems"]
-        for kw in secondary_keywords:
-            if kw in t_low:
-                return 16.0, f"Related role match: contains '{kw}' in '{title}' (+16 pts)", ""
+        # SRE standalone acronym check (word boundary)
+        if re.search(r"\bsre\b", t_low):
+            return 25.0, f"Target role match: '{title}' matches SRE target domain (+25 pts)", ""
 
-        unrelated = ["sales", "recruiter", "marketing", "account executive", "frontend", "react", "graphic designer"]
+        secondary_keywords = [
+            "devops", "cloud", "infrastructure", "sre", "platform", "kubernetes",
+            "systems", "linux", "aws", "terraform", "automation", "sysadmin", "docker"
+        ]
+        for kw in secondary_keywords:
+            if re.search(rf"\b{re.escape(kw)}\b", t_low):
+                return 18.0, f"Related role match: contains '{kw}' in '{title}' (+18 pts)", ""
+
+        unrelated = ["sales", "recruiter", "marketing", "account executive", "frontend", "react", "graphic designer", "copywriter", "finance"]
         for un in unrelated:
             if re.search(rf"\b{re.escape(un)}\b", t_low):
                 return -25.0, "", f"Role title '{title}' appears unrelated to DevOps/Cloud (-25 pts)"
@@ -265,12 +282,17 @@ class JobScorer:
             elif min_yrs <= 2 and max_yrs > 3:
                 return 6.0, f"Minimum experience ({min_yrs} yrs) is reachable, but upper range ({max_yrs} yrs) suggests mid expectations (+6 pts)", f"Range {extracted_exp} exceeds 0-3 yrs at the upper end", extracted_exp, f"Range {extracted_exp} requires review", False
 
+        # Explicit experience requirement penalty check (e.g. "minimum 5 years", "requires 4+ years")
         for kw in self.pen_exp_keywords:
-            kw_clean = kw.strip().rstrip(".")
-            if re.search(rf"\b{re.escape(kw_clean)}\b", text):
-                if any(yr in kw for yr in ["4+", "5+", "6+", "7+", "8+", "10+"]):
+            if any(yr in kw for yr in ["4+", "5+", "6+", "7+", "8+", "10+"]):
+                if re.search(rf"\b{re.escape(kw)}\b", text):
                     return -100.0, "", f"Requires {kw} experience. Exceeds target 0-3 years profile", f"Senior ({kw})", f"Penalty keyword '{kw}' found in listing", True
-                return -40.0, "", f"Seniority keywords found ('{kw}'). Exceeds target 0-3 years profile", f"Senior ({kw})", f"Seniority keyword '{kw}' found in listing", True
+
+        # Check explicit senior role declaration in snippet (avoid incidental mentions like 'work with senior engineers')
+        explicit_senior_body = re.search(r"\b(we\s+are\s+looking\s+for\s+a|seeking\s+a|hiring\s+a)\s+(?:senior|lead|principal|staff|architect|director)\b", text, re.IGNORECASE)
+        if explicit_senior_body:
+            m = explicit_senior_body.group(0)
+            return -50.0, "", f"Senior opening indicated in listing body ('{m}'). Exceeds target 0-3 years profile", "Senior", f"Seniority phrase '{m}' in description", True
 
         for kw in self.pos_exp_keywords:
             kw_clean = kw.strip()
@@ -283,13 +305,15 @@ class JobScorer:
     def _score_location(self, location: str, arrangement: str, text: str) -> Tuple[float, str, str, bool]:
         loc_low = location.lower()
         arr_low = arrangement.lower()
+        comb_loc = f"{loc_low} {arr_low} {text}".lower()
 
         # Check Pune first (Primary Target)
         if any(p in loc_low or p in text for p in self.primary_locations):
             return 15.0, "Location match: Pune, Maharashtra is your primary target location (+15 pts)", "", False
 
         # Check Remote
-        if "remote" in arr_low or "remote" in loc_low or "work from home" in text or "anywhere" in loc_low or "worldwide" in loc_low:
+        is_remote = "remote" in arr_low or "remote" in loc_low or "work from home" in comb_loc or "home based" in comb_loc or "anywhere" in loc_low or "worldwide" in loc_low
+        if is_remote:
             has_foreign_country = bool(re.search(r"\b(united\s+states|usa|u\.s\.|canada|united\s+kingdom|uk|london|germany|poland|brazil|mexico|argentina|australia|singapore|ireland|california|san\s+francisco|san\s+jose|washington|seattle|new\s+york|texas|austin|chicago|bellevue)\b", loc_low))
             has_india_or_global = bool(re.search(r"\b(india|pune|bangalore|bengaluru|hyderabad|worldwide|anywhere|global)\b", loc_low))
             if self.FOREIGN_REMOTE_PATTERN.search(loc_low) or self.FOREIGN_REMOTE_PATTERN.search(text) or (has_foreign_country and not has_india_or_global):

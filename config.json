@@ -4,15 +4,20 @@
       "Cloud Administrator",
       "AWS Cloud Support",
       "Junior Cloud Engineer",
+      "Cloud Engineer",
       "Junior DevOps",
       "Junior DevOps Engineer",
       "DevOps Engineer",
       "Infrastructure Engineer",
       "Platform Engineer",
+      "Site Reliability Engineer",
       "Junior Site Reliability Engineer",
+      "SRE",
       "Junior SRE",
       "Systems Engineer",
-      "Cloud Support Engineer"
+      "Cloud Support Engineer",
+      "Linux Administrator",
+      "Build and Release Engineer"
     ],
     "target_locations_primary": [
       "Pune",
@@ -88,7 +93,7 @@
     }
   },
   "filters": {
-    "max_posting_age_days": 1,
+    "max_posting_age_days": 7,
     "pune_or_remote_india_only": true,
     "strict_verified_only": false,
     "max_experience_years": 3,

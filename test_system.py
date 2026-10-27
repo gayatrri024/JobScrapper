@@ -611,6 +611,7 @@ class TestExcelJobExport(unittest.TestCase):
     def test_excel_empty_result_set(self):
         """Exporting an empty list of jobs should create a valid workbook with headers and no rows."""
         import openpyxl
+        from excel_export import EXCEL_COLUMNS
         path, count, dupes = self.exporter.export_jobs([])
         self.assertTrue(os.path.exists(path))
         self.assertEqual(count, 0)
@@ -620,9 +621,7 @@ class TestExcelJobExport(unittest.TestCase):
         ws = wb.active
         self.assertEqual(ws.max_row, 1)
         headers = [c.value for c in ws[1]]
-        self.assertEqual(headers, [
-            "#", "Company", "Job Location", "Date Posted", "Job Role", "Careers Page", "LinkedIn / Company URL"
-        ])
+        self.assertEqual(headers, EXCEL_COLUMNS)
         self.assertEqual(ws.freeze_panes, "A2")
 
     def test_excel_columns_and_row_data(self):
@@ -645,13 +644,14 @@ class TestExcelJobExport(unittest.TestCase):
 
         self.assertEqual(ws.max_row, 2)
         row_vals = [c.value for c in ws[2]]
-        self.assertEqual(row_vals[0], 1)                        # #
-        self.assertEqual(row_vals[1], "Salesforce")              # Company
-        self.assertEqual(row_vals[2], "Pune, India")             # Job Location
-        self.assertEqual(row_vals[3], "2026-10-21")              # Date Posted
-        self.assertEqual(row_vals[4], "Junior Cloud Support Engineer") # Job Role
-        self.assertEqual(row_vals[5], "https://salesforce.com/job123") # Careers Page
-        self.assertEqual(row_vals[6], "https://careers.salesforce.com/") # LinkedIn / Company URL (from company_targets)
+        self.assertEqual(row_vals[0], 1)                                   # #
+        self.assertEqual(row_vals[1], "Salesforce")                         # Company
+        self.assertEqual(row_vals[2], "Junior Cloud Support Engineer")      # Job Role
+        self.assertEqual(row_vals[3], "Pune, India")                        # Location
+        self.assertEqual(row_vals[5], "2026-10-21")                         # Date Posted
+        self.assertEqual(row_vals[6], "Verified")                           # Verification Status
+        self.assertEqual(row_vals[10], "https://salesforce.com/job123")     # Careers Page
+        self.assertEqual(row_vals[11], "https://careers.salesforce.com/")   # LinkedIn / Company URL (from company_targets)
 
     def test_excel_hyperlinks_attached(self):
         """Careers page and company URLs must have valid clickable hyperlinks."""
@@ -670,11 +670,11 @@ class TestExcelJobExport(unittest.TestCase):
         wb = openpyxl.load_workbook(path)
         ws = wb.active
 
-        careers_cell = ws.cell(row=2, column=6)
+        careers_cell = ws.cell(row=2, column=11)
         self.assertIsNotNone(careers_cell.hyperlink)
         self.assertEqual(careers_cell.hyperlink.target, "https://mastercard.com/careers/job99")
 
-        company_cell = ws.cell(row=2, column=7)
+        company_cell = ws.cell(row=2, column=12)
         self.assertIsNotNone(company_cell.hyperlink)
         self.assertTrue("mastercard" in company_cell.hyperlink.target.lower())
 
@@ -697,17 +697,17 @@ class TestExcelJobExport(unittest.TestCase):
 
         # Row 2 values
         c_comp = ws.cell(row=2, column=2).value
-        c_loc = ws.cell(row=2, column=3).value
-        c_date = ws.cell(row=2, column=4).value
-        c_apply = ws.cell(row=2, column=6).value
-        c_company_url = ws.cell(row=2, column=7).value
+        c_loc = ws.cell(row=2, column=4).value
+        c_date = ws.cell(row=2, column=6).value
+        c_apply = ws.cell(row=2, column=11).value
+        c_company_url = ws.cell(row=2, column=12).value
 
         self.assertTrue(c_comp is None or c_comp == "")
         self.assertTrue(c_loc is None or c_loc == "")
         self.assertTrue(c_date is None or c_date == "")
         self.assertTrue(c_apply is None or c_apply == "")
         self.assertTrue(c_company_url is None or c_company_url == "")
-        self.assertIsNone(ws.cell(row=2, column=6).hyperlink)
+        self.assertIsNone(ws.cell(row=2, column=11).hyperlink)
 
     def test_excel_deduplication_removes_tracking_params(self):
         """Equivalent URLs with tracking parameters must be deduplicated to a single record."""
@@ -747,6 +747,52 @@ class TestExcelJobExport(unittest.TestCase):
         self.assertEqual(sorted_j[1]["job_title"], "Job Middle")
         self.assertEqual(sorted_j[2]["job_title"], "Job Old")
         self.assertEqual(sorted_j[3]["job_title"], "Job Undated")
+
+    def test_excel_multi_sheet_categorized_export(self):
+        """Exporting categorized jobs must generate a 4-sheet workbook with all sections."""
+        import openpyxl
+        verified = [{"job_title": "DevOps Engineer", "company": "Acme", "application_url": "https://acme.com/job1", "date_confidence": "Verified", "posting_date": "2026-10-24"}]
+        leads = [{"job_title": "Cloud Support", "company": "Beta", "application_url": "https://beta.com/job2", "date_confidence": "Unknown"}]
+        rejected = [{"job_title": "Senior Lead Architect", "company": "Gamma", "rejection_reason": "Senior / Lead (5+ years exp disqualified)", "application_url": "https://gamma.com/job3"}]
+        report = [{"source": "Lever", "status": "HEALTHY", "jobs_found": 10, "duration_sec": 1.2, "error": None}]
+        stats = {"total_fetched": 100, "dupes_removed": 2, "total_unique": 98, "verified_count": 1, "leads_count": 1, "rejected_count": 1}
+
+        path, count, dupes = self.exporter.export_categorized_jobs(
+            verified_jobs=verified,
+            leads=leads,
+            rejected=rejected,
+            source_report=report,
+            summary_stats=stats
+        )
+        self.assertTrue(os.path.exists(path))
+        wb = openpyxl.load_workbook(path)
+        self.assertEqual(wb.sheetnames, ["Verified Opportunities", "Unverified Leads", "Rejected & Disqualified", "Pipeline & Source Health"])
+
+    def test_direct_employer_url_preferred_over_aggregator(self):
+        """When deduplicating identical jobs, direct employer URLs must be preferred over news aggregator links."""
+        from excel_export import deduplicate_jobs
+        jobs = [
+            {
+                "job_title": "DevOps Engineer",
+                "company": "GitLab",
+                "application_url": "https://news.google.com/rss/articles/CBMi123",
+                "date_confidence": "Unknown",
+                "match_score": 45.0
+            },
+            {
+                "job_title": "DevOps Engineer",
+                "company": "GitLab",
+                "application_url": "https://jobs.lever.co/gitlab/abc-apply",
+                "canonical_application_url": "https://jobs.lever.co/gitlab/abc-apply",
+                "date_confidence": "Verified",
+                "match_score": 85.0
+            }
+        ]
+        deduped, removed = deduplicate_jobs(jobs)
+        self.assertEqual(len(deduped), 1)
+        self.assertEqual(removed, 1)
+        self.assertEqual(deduped[0]["application_url"], "https://jobs.lever.co/gitlab/abc-apply")
+        self.assertEqual(deduped[0]["date_confidence"], "Verified")
 
 
 if __name__ == "__main__":
